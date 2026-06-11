@@ -113,6 +113,7 @@
                         <select id="mode-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                             <option value="brightness">Helligkeit (Brightness)</option>
                             <option value="hue">Farbton (Hue)</option>
+                            <option value="saturation">Sättigung (Saturation)</option>
                             <option value="red">Rotkanal (Red Channel)</option>
                         </select>
                     </div>
@@ -126,6 +127,14 @@
                         <input type="range" id="threshold-slider" min="0" max="255" value="120" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
                     </div>
 
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <label for="upper-threshold-slider" class="text-xs text-slate-400 uppercase tracking-wider">Oberer Schwellenwert (`upperThreshold`)</label>
+                            <span id="upper-threshold-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">204</span>
+                        </div>
+                        <input type="range" id="upper-threshold-slider" min="0" max="255" value="204" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
+                    </div>
+
                     <!-- Direction Select -->
                     <div class="flex flex-col gap-2">
                         <label for="direction-select" class="text-xs text-slate-400 uppercase tracking-wider">Sortier-Richtung (`direction`)</label>
@@ -133,6 +142,30 @@
                             <option value="vertical">Vertikal ↓</option>
                             <option value="horizontal">Horizontal →</option>
                         </select>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label for="sort-type-select" class="text-xs text-slate-400 uppercase tracking-wider">Intervall-Typ (`sortType`)</label>
+                        <select id="sort-type-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="threshold">Threshold</option>
+                            <option value="random">Random</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <label for="angle-slider" class="text-xs text-slate-400 uppercase tracking-wider">Winkel (`angle`)</label>
+                            <span id="angle-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">0°</span>
+                        </div>
+                        <input type="range" id="angle-slider" min="0" max="359" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <label for="falloff-slider" class="text-xs text-slate-400 uppercase tracking-wider">Falloff (`falloff`)</label>
+                            <span id="falloff-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">100%</span>
+                        </div>
+                        <input type="range" id="falloff-slider" min="0" max="100" value="100" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
                     </div>
                 </div>
 
@@ -145,6 +178,11 @@
                     <button id="generate-art-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 px-4 rounded-lg text-sm font-medium transition duration-200 border border-slate-700 flex items-center justify-center gap-2">
                         <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         Neues Testbild generieren
+                    </button>
+
+                    <button id="save-image-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 px-4 rounded-lg text-sm font-medium transition duration-200 border border-slate-700 flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg>
+                        Bild speichern
                     </button>
                 </div>
             </div>
@@ -224,10 +262,18 @@
         const fileStatus = document.getElementById('file-status');
         const thresholdSlider = document.getElementById('threshold-slider');
         const thresholdVal = document.getElementById('threshold-val');
+        const upperThresholdSlider = document.getElementById('upper-threshold-slider');
+        const upperThresholdVal = document.getElementById('upper-threshold-val');
         const modeSelect = document.getElementById('mode-select');
         const directionSelect = document.getElementById('direction-select');
+        const sortTypeSelect = document.getElementById('sort-type-select');
+        const angleSlider = document.getElementById('angle-slider');
+        const angleVal = document.getElementById('angle-val');
+        const falloffSlider = document.getElementById('falloff-slider');
+        const falloffVal = document.getElementById('falloff-val');
         const processBtn = document.getElementById('process-btn');
         const generateArtBtn = document.getElementById('generate-art-btn');
+        const saveImageBtn = document.getElementById('save-image-btn');
         const resetImageBtn = document.getElementById('reset-image-btn');
         const restoreCodeBtn = document.getElementById('restore-code-btn');
         const codeEditor = document.getElementById('code-editor');
@@ -237,6 +283,8 @@
         const previewPanel = document.getElementById('preview-panel');
 
         let originalImage = null;
+        let baseCanvasWidth = 400;
+        let baseCanvasHeight = 400;
 
         // Vordefinierter, optimierter Standardcode für den Live-Editor
         const DEFAULT_ALGORITHM_CODE = `// PIXEL SORTING ALGORITHMUS - LIVE CODE
@@ -259,11 +307,25 @@ const getHue = (r, g, b) => {
     else h = (r_ - g_) / (max - min) + 4;
     return h / 6;
 };
+const getSaturation = (r, g, b) => {
+    let r_ = r/255, g_ = g/255, b_ = b/255;
+    let max = Math.max(r_, g_, b_), min = Math.min(r_, g_, b_);
+    return max === 0 ? 0 : (max - min) / max;
+};
+
+const shouldSortPixel = (r, g, b, a) => {
+    const v = getBrightness(r, g, b);
+    return a !== 0 && v >= threshold && v <= upperThreshold;
+};
+
+const shouldKeepInterval = () => Math.random() * 100 <= falloff;
+const randomEnd = (position, limit) => Math.min(limit, position + Math.floor(limit * 0.01 + Math.random() * 100));
 
 // Berechnet den Sortierwert basierend auf UI-Auswahl
 const getSortValue = (r, g, b) => {
     if (mode === 'brightness') return getBrightness(r, g, b);
     if (mode === 'hue') return getHue(r, g, b);
+    if (mode === 'saturation') return getSaturation(r, g, b);
     if (mode === 'red') return r;
     return 0;
 };
@@ -277,19 +339,25 @@ if (direction === 'vertical') {
             // Finde Startpunkt über Threshold
             while (y < h) {
                 let idx = (y * w + x) * 4;
-                if (getBrightness(data[idx], data[idx+1], data[idx+2]) > threshold) break;
+                if (shouldSortPixel(data[idx], data[idx+1], data[idx+2], data[idx+3])) break;
                 y++;
             }
             let startY = y;
-            // Finde Endpunkt unter/gleich Threshold
-            while (y < h) {
-                let idx = (y * w + x) * 4;
-                if (getBrightness(data[idx], data[idx+1], data[idx+2]) <= threshold) break;
-                y++;
+            let endY;
+            if (sortType === 'random') {
+                endY = randomEnd(startY, h - 1);
+                y = endY + 1;
+            } else {
+                // Finde Endpunkt außerhalb des Threshold-Fensters
+                while (y < h) {
+                    let idx = (y * w + x) * 4;
+                    if (!shouldSortPixel(data[idx], data[idx+1], data[idx+2], data[idx+3])) break;
+                    y++;
+                }
+                endY = y;
             }
-            let endY = y;
 
-            if (startY < endY) {
+            if (startY < endY && shouldKeepInterval()) {
                 // Segment erfassen und sortieren
                 let pixels = [];
                 for (let sy = startY; sy < endY; sy++) {
@@ -320,19 +388,25 @@ if (direction === 'vertical') {
             // Finde Startpunkt über Threshold
             while (x < w) {
                 let idx = (y * w + x) * 4;
-                if (getBrightness(data[idx], data[idx+1], data[idx+2]) > threshold) break;
+                if (shouldSortPixel(data[idx], data[idx+1], data[idx+2], data[idx+3])) break;
                 x++;
             }
             let startX = x;
-            // Finde Endpunkt unter/gleich Threshold
-            while (x < w) {
-                let idx = (y * w + x) * 4;
-                if (getBrightness(data[idx], data[idx+1], data[idx+2]) <= threshold) break;
-                x++;
+            let endX;
+            if (sortType === 'random') {
+                endX = randomEnd(startX, w - 1);
+                x = endX + 1;
+            } else {
+                // Finde Endpunkt außerhalb des Threshold-Fensters
+                while (x < w) {
+                    let idx = (y * w + x) * 4;
+                    if (!shouldSortPixel(data[idx], data[idx+1], data[idx+2], data[idx+3])) break;
+                    x++;
+                }
+                endX = x;
             }
-            let endX = x;
 
-            if (startX < endX) {
+            if (startX < endX && shouldKeepInterval()) {
                 let pixels = [];
                 for (let sx = startX; sx < endX; sx++) {
                     let idx = (y * w + sx) * 4;
@@ -406,11 +480,60 @@ ctx.putImageData(imgData, 0, 0);`;
             consoleOutput.innerHTML = `<div class="text-slate-500">[System]: Konsole gelöscht.</div>`;
         });
 
+        function setCanvasSize(width, height) {
+            baseCanvasWidth = width;
+            baseCanvasHeight = height;
+            canvas.width = width;
+            canvas.height = height;
+            resolutionDisplay.textContent = `${width} x ${height} px`;
+        }
+
+        function drawOriginalImage() {
+            setCanvasSize(baseCanvasWidth, baseCanvasHeight);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(originalImage, 0, 0, baseCanvasWidth, baseCanvasHeight);
+        }
+
+        function rotateCanvasForSort(angle) {
+            if (!angle) return null;
+            const source = document.createElement('canvas');
+            source.width = canvas.width;
+            source.height = canvas.height;
+            source.getContext('2d').drawImage(canvas, 0, 0);
+
+            const diagonal = Math.ceil(Math.sqrt(source.width * source.width + source.height * source.height));
+            canvas.width = diagonal;
+            canvas.height = diagonal;
+            resolutionDisplay.textContent = `${baseCanvasWidth} x ${baseCanvasHeight} px / ${angle}°`;
+
+            ctx.save();
+            ctx.clearRect(0, 0, diagonal, diagonal);
+            ctx.translate(diagonal / 2, diagonal / 2);
+            ctx.rotate(angle * Math.PI / 180);
+            ctx.drawImage(source, -source.width / 2, -source.height / 2);
+            ctx.restore();
+            return { diagonal };
+        }
+
+        function unrotateCanvasAfterSort(angle, rotationState) {
+            if (!angle || !rotationState) return;
+            const sorted = document.createElement('canvas');
+            sorted.width = canvas.width;
+            sorted.height = canvas.height;
+            sorted.getContext('2d').drawImage(canvas, 0, 0);
+
+            setCanvasSize(baseCanvasWidth, baseCanvasHeight);
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(-angle * Math.PI / 180);
+            ctx.drawImage(sorted, -sorted.width / 2, -sorted.height / 2);
+            ctx.restore();
+        }
+
         // GENERATIVE ART WORK PIECE (FOR STARTUP FALLBACK)
         function generateProceduralArt() {
-            canvas.width = 400;
-            canvas.height = 400;
-            resolutionDisplay.textContent = `${canvas.width} x ${canvas.height} px`;
+            setCanvasSize(400, 400);
 
             // Draw beautiful colorful background gradient
             const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
@@ -487,9 +610,7 @@ ctx.putImageData(imgData, 0, 0);`;
                         logToConsole(`Bildauflösung wurde zwecks Verarbeitungs-Performance auf ${targetW}x${targetH} skaliert.`, 'warning');
                     }
 
-                    canvas.width = targetW;
-                    canvas.height = targetH;
-                    resolutionDisplay.textContent = `${targetW} x ${targetH} px`;
+                    setCanvasSize(targetW, targetH);
                     
                     ctx.drawImage(originalImage, 0, 0, targetW, targetH);
                     previewPanel.scrollIntoView({ block: 'nearest' });
@@ -501,8 +622,7 @@ ctx.putImageData(imgData, 0, 0);`;
         // RECOVERY OPERATORS
         resetImageBtn.addEventListener('click', () => {
             if (originalImage && originalImage.src) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+                drawOriginalImage();
                 logToConsole("Bild auf Originalzustand zurückgesetzt.", "info");
                 showToast("Originalbild wiederhergestellt", "info");
             } else {
@@ -527,6 +647,28 @@ ctx.putImageData(imgData, 0, 0);`;
             thresholdVal.textContent = e.target.value;
         });
 
+        upperThresholdSlider.addEventListener('input', (e) => {
+            upperThresholdVal.textContent = e.target.value;
+        });
+
+        angleSlider.addEventListener('input', (e) => {
+            angleVal.textContent = `${e.target.value}°`;
+        });
+
+        falloffSlider.addEventListener('input', (e) => {
+            falloffVal.textContent = `${e.target.value}%`;
+        });
+
+        saveImageBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+            link.download = `pixelsort-${stamp}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            logToConsole("Bild als PNG vorbereitet.", "success");
+            showToast("Bild gespeichert", "success");
+        });
+
         // EXECUTION ENGINE (THE COMPILER)
         function executeSorterCode() {
             if (!originalImage) {
@@ -538,22 +680,27 @@ ctx.putImageData(imgData, 0, 0);`;
             logToConsole("Starte Sortierlauf...", "info");
             const startTime = performance.now();
 
-            // Setze das Canvas kurz auf das Originalbild zurück, um progressive Sortier-Überlagerungen steuerbar zu machen
-            ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+            drawOriginalImage();
 
             // Vorbereitung der UI-Eingabewerte für den Code
             const threshold = parseInt(thresholdSlider.value);
+            const upperThreshold = parseInt(upperThresholdSlider.value);
             const mode = modeSelect.value;
             const direction = directionSelect.value;
+            const sortType = sortTypeSelect.value;
+            const angle = parseInt(angleSlider.value);
+            const falloff = parseInt(falloffSlider.value);
             const userCode = codeEditor.value;
+            const rotationState = rotateCanvasForSort(angle);
 
             try {
                 // Dynamische Code-Konstruktion
                 // Wir packen den Code in einen sicheren Funktions-Wrapper, der Zugriff auf unsere Context-Variablen hat
-                const sortFunction = new Function('canvas', 'ctx', 'threshold', 'mode', 'direction', userCode);
+                const sortFunction = new Function('canvas', 'ctx', 'threshold', 'upperThreshold', 'mode', 'direction', 'sortType', 'falloff', userCode);
                 
                 // Ausführung
-                sortFunction(canvas, ctx, threshold, mode, direction);
+                sortFunction(canvas, ctx, threshold, upperThreshold, mode, direction, sortType, falloff);
+                unrotateCanvasAfterSort(angle, rotationState);
 
                 const duration = (performance.now() - startTime).toFixed(1);
                 logToConsole(`Sortierzyklus erfolgreich abgeschlossen in ${duration} ms.`, "success");
@@ -561,6 +708,7 @@ ctx.putImageData(imgData, 0, 0);`;
 
             } catch (error) {
                 // Fange Fehler im benutzerdefinierten Code auf
+                unrotateCanvasAfterSort(angle, rotationState);
                 console.error("User Code Error: ", error);
                 logToConsole(`COMPILER_ERROR: ${error.message}`, "error");
                 showToast("Code-Fehler! Siehe Konsole.", "error");
