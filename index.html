@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Sorter Studio & Live Code Editor</title>
+    <link rel="stylesheet" href="./tailwind-generated.css">
+    <style>
+        /* Custom Scrollbar für den IDE-Look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .code-input {
+            tab-size: 4;
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+        }
+        /* Pulsierender Effekt für Status */
+        @keyframes pulse-green {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulse-active {
+            animation: pulse-green 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans overflow-hidden">
+
+    <!-- HEADER -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-3 h-3 rounded-full bg-emerald-500 pulse-active"></div>
+            <h1 class="text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
+                PIXEL_SORTER // LIVE_STUDIO
+            </h1>
+        </div>
+        <div class="flex items-center gap-4 text-xs text-slate-400">
+            <span>MODUS: <strong class="text-slate-200">INTERAKTIVE SANDBOX</strong></span>
+            <span class="hidden sm:inline">|</span>
+            <span class="hidden sm:inline">ENGINE: <strong class="text-emerald-400">HTML5 CANVAS + LIVE JS</strong></span>
+        </div>
+    </header>
+
+    <!-- MAIN INTERFACE -->
+    <main class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+        
+        <!-- LINKE SPALTE: BILD & STEUERUNG -->
+        <section class="flex-1 p-4 lg:p-6 flex flex-col gap-6 overflow-y-auto min-w-0">
+            
+            <!-- CONTROLS CARD -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 flex flex-col gap-4 shadow-xl backdrop-blur-sm">
+                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    Parameter & Steuerung
+                </h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Image Upload -->
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs text-slate-400 uppercase tracking-wider">Bilddatenquelle</label>
+                        <div class="flex gap-2">
+                            <label class="flex-1 bg-slate-800 hover:bg-slate-700 active:bg-slate-700 border border-slate-700 hover:border-slate-500 rounded-lg p-2.5 text-center cursor-pointer text-sm font-medium transition duration-200 flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                Bild hochladen
+                                <input type="file" id="imageLoader" accept="image/*" class="hidden">
+                            </label>
+                            <button id="reset-image-btn" title="Originalbild wiederherstellen" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 transition duration-200 text-slate-300">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 15H19"></path></svg>
+                            </button>
+                        </div>
+                        <div id="file-status" class="text-xs text-slate-500 truncate">Standard-Testbild aktiv</div>
+                    </div>
+
+                    <!-- Sort Mode -->
+                    <div class="flex flex-col gap-2">
+                        <label for="mode-select" class="text-xs text-slate-400 uppercase tracking-wider">Sortier-Modus (`mode` im Code)</label>
+                        <select id="mode-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="brightness">Helligkeit (Brightness)</option>
+                            <option value="hue">Farbton (Hue)</option>
+                            <option value="red">Rotkanal (Red Channel)</option>
+                        </select>
+                    </div>
+
+                    <!-- Threshold Slider -->
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <label for="threshold-slider" class="text-xs text-slate-400 uppercase tracking-wider">Helligkeits-Schwellenwert (`threshold`)</label>
+                            <span id="threshold-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">120</span>
+                        </div>
+                        <input type="range" id="threshold-slider" min="0" max="255" value="120" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
+                    </div>
+
+                    <!-- Direction Select -->
+                    <div class="flex flex-col gap-2">
+                        <label for="direction-select" class="text-xs text-slate-400 uppercase tracking-wider">Sortier-Richtung (`direction`)</label>
+                        <select id="direction-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="vertical">Vertikal ↓</option>
+                            <option value="horizontal">Horizontal →</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 mt-2">
+                    <button id="process-btn" class="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 active:scale-[0.98] text-slate-950 font-bold py-3 px-6 rounded-lg text-sm tracking-wider uppercase transition duration-150 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Sortierlauf starten (Code ausführen)
+                    </button>
+                    
+                    <button id="generate-art-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 px-4 rounded-lg text-sm font-medium transition duration-200 border border-slate-700 flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Neues Testbild generieren
+                    </button>
+                </div>
+            </div>
+
+            <!-- CANVAS CONTAINER -->
+            <div class="flex-1 bg-slate-950 border border-slate-800 rounded-xl flex flex-col overflow-hidden shadow-2xl relative min-h-[350px]">
+                <div class="bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                    <span class="font-mono flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
+                        LIVE_PREVIEW_CANVAS
+                    </span>
+                    <span id="resolution-display" class="font-mono">0 x 0 px</span>
+                </div>
+                <div class="flex-1 flex items-center justify-center p-4 overflow-auto bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px]">
+                    <canvas id="imageCanvas" class="max-w-full max-h-[50vh] object-contain rounded-lg shadow-2xl border border-slate-800/50 bg-slate-900 image-render-pixelated"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- RECHTE SPALTE: ECHTE LIVE-IDE / CODESCHREIBFENSTER -->
+        <section class="w-full lg:w-[500px] xl:w-[600px] bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col overflow-hidden shrink-0">
+            <!-- IDE HEADER -->
+            <div class="bg-slate-950/80 px-5 py-4 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                    <h2 class="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                        Algorithmen-Editor
+                    </h2>
+                    <p class="text-[10px] text-slate-500 mt-0.5">Du kannst diesen JavaScript-Code live bearbeiten und ausführen!</p>
+                </div>
+                <button id="restore-code-btn" title="Code auf Werkseinstellungen zurücksetzen" class="text-xs text-slate-400 hover:text-cyan-400 bg-slate-800 border border-slate-700 hover:border-slate-600 px-2.5 py-1.5 rounded-md transition duration-200 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 10-3.86.517l3.18.636a2 2 0 001.38-.277l1.88-1.134z"></path></svg>
+                    Code Reset
+                </button>
+            </div>
+
+            <!-- THE CODE EDITOR AREA -->
+            <div class="flex-1 flex flex-col relative min-h-[300px]">
+                <!-- Line Numbers Decorator (Visual feedback inside Editor) -->
+                <div class="flex-1 flex">
+                    <div class="w-12 bg-slate-950/40 text-slate-600 text-right pr-2.5 py-4 font-mono text-xs select-none border-r border-slate-800/40 leading-6">
+                        1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12<br>13<br>14<br>15<br>16<br>17<br>18<br>19<br>20<br>21<br>22<br>23<br>24<br>25<br>26<br>27<br>28<br>29<br>30<br>31<br>32<br>33<br>34<br>35<br>36<br>37<br>38<br>39<br>40
+                    </div>
+                    <textarea id="code-editor" class="flex-1 bg-slate-900/40 text-cyan-300 p-4 font-mono text-xs leading-6 resize-none focus:outline-none focus:ring-0 code-input overflow-y-auto" spellcheck="false" autocomplete="off"></textarea>
+                </div>
+            </div>
+
+            <!-- CONSOLE / RUNTIME FEEDBACK -->
+            <div class="bg-slate-950 border-t border-slate-800 p-4 flex flex-col gap-2 min-h-[140px] shrink-0">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold tracking-widest text-slate-500 uppercase flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                        Konsolen-Ausgabe & Performance
+                    </span>
+                    <button id="clear-console" class="text-[10px] text-slate-500 hover:text-slate-300 uppercase transition">Löschen</button>
+                </div>
+                <div id="console-output" class="flex-1 bg-slate-900 rounded-lg p-3 font-mono text-xs overflow-y-auto border border-slate-800/80 leading-5">
+                    <div class="text-slate-400">[System]: Engine bereit. Drücke "Sortierlauf starten" zum Rendern.</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- CUSTOM TOAST MESSAGES -->
+    <div id="toast" class="fixed bottom-6 left-6 bg-slate-900 border border-slate-700 text-slate-200 px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none z-50">
+        <span id="toast-icon"></span>
+        <span id="toast-message" class="text-sm font-medium">Message here</span>
+    </div>
+
+    <!-- MAIN SCRIPT -->
+    <script>
+        // DOM ELEMENTS
+        const imageLoader = document.getElementById('imageLoader');
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const fileStatus = document.getElementById('file-status');
+        const thresholdSlider = document.getElementById('threshold-slider');
+        const thresholdVal = document.getElementById('threshold-val');
+        const modeSelect = document.getElementById('mode-select');
+        const directionSelect = document.getElementById('direction-select');
+        const processBtn = document.getElementById('process-btn');
+        const generateArtBtn = document.getElementById('generate-art-btn');
+        const resetImageBtn = document.getElementById('reset-image-btn');
+        const restoreCodeBtn = document.getElementById('restore-code-btn');
+        const codeEditor = document.getElementById('code-editor');
+        const consoleOutput = document.getElementById('console-output');
+        const clearConsoleBtn = document.getElementById('clear-console');
+        const resolutionDisplay = document.getElementById('resolution-display');
+
+        let originalImage = null;
+
+        // Vordefinierter, optimierter Standardcode für den Live-Editor
+        const DEFAULT_ALGORITHM_CODE = `// PIXEL SORTING ALGORITHMUS - LIVE CODE
+// Du kannst den Code verändern, um das Sortier-Verhalten anzupassen!
+
+const w = canvas.width;
+const h = canvas.height;
+const imgData = ctx.getImageData(0, 0, w, h);
+const data = imgData.data; // Flaches Array: [R, G, B, A, R, G, B, A...]
+
+// Hilfsfunktionen (zur Benutzung freigegeben)
+const getBrightness = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
+const getHue = (r, g, b) => {
+    let r_ = r/255, g_ = g/255, b_ = b/255;
+    let max = Math.max(r_, g_, b_), min = Math.min(r_, g_, b_);
+    if(max === min) return 0;
+    let h;
+    if(max === r_) h = (g_ - b_) / (max - min) + (g_ < b_ ? 6 : 0);
+    else if(max === g_) h = (b_ - r_) / (max - min) + 2;
+    else h = (r_ - g_) / (max - min) + 4;
+    return h / 6;
+};
+
+// Berechnet den Sortierwert basierend auf UI-Auswahl
+const getSortValue = (r, g, b) => {
+    if (mode === 'brightness') return getBrightness(r, g, b);
+    if (mode === 'hue') return getHue(r, g, b);
+    if (mode === 'red') return r;
+    return 0;
+};
+
+// --- SORTIERUNG STARTEN ---
+if (direction === 'vertical') {
+    // Vertikales Sortieren (Spalte für Spalte)
+    for (let x = 0; x < w; x++) {
+        let y = 0;
+        while (y < h) {
+            // Finde Startpunkt über Threshold
+            while (y < h) {
+                let idx = (y * w + x) * 4;
+                if (getBrightness(data[idx], data[idx+1], data[idx+2]) > threshold) break;
+                y++;
+            }
+            let startY = y;
+            // Finde Endpunkt unter/gleich Threshold
+            while (y < h) {
+                let idx = (y * w + x) * 4;
+                if (getBrightness(data[idx], data[idx+1], data[idx+2]) <= threshold) break;
+                y++;
+            }
+            let endY = y;
+
+            if (startY < endY) {
+                // Segment erfassen und sortieren
+                let pixels = [];
+                for (let sy = startY; sy < endY; sy++) {
+                    let idx = (sy * w + x) * 4;
+                    pixels.push({
+                        r: data[idx], g: data[idx+1], b: data[idx+2], a: data[idx+3],
+                        val: getSortValue(data[idx], data[idx+1], data[idx+2])
+                    });
+                }
+                
+                // Sortiere das Segment
+                pixels.sort((a, b) => a.val - b.val);
+
+                // Pixel zurückschreiben
+                for (let sy = startY; sy < endY; sy++) {
+                    let idx = (sy * w + x) * 4;
+                    let p = pixels[sy - startY];
+                    data[idx] = p.r; data[idx+1] = p.g; data[idx+2] = p.b; data[idx+3] = p.a;
+                }
+            }
+        }
+    }
+} else {
+    // Horizontales Sortieren (Zeile für Zeile)
+    for (let y = 0; y < h; y++) {
+        let x = 0;
+        while (x < w) {
+            // Finde Startpunkt über Threshold
+            while (x < w) {
+                let idx = (y * w + x) * 4;
+                if (getBrightness(data[idx], data[idx+1], data[idx+2]) > threshold) break;
+                x++;
+            }
+            let startX = x;
+            // Finde Endpunkt unter/gleich Threshold
+            while (x < w) {
+                let idx = (y * w + x) * 4;
+                if (getBrightness(data[idx], data[idx+1], data[idx+2]) <= threshold) break;
+                x++;
+            }
+            let endX = x;
+
+            if (startX < endX) {
+                let pixels = [];
+                for (let sx = startX; sx < endX; sx++) {
+                    let idx = (y * w + sx) * 4;
+                    pixels.push({
+                        r: data[idx], g: data[idx+1], b: data[idx+2], a: data[idx+3],
+                        val: getSortValue(data[idx], data[idx+1], data[idx+2])
+                    });
+                }
+
+                // Sortiere das Segment
+                pixels.sort((a, b) => a.val - b.val);
+
+                for (let sx = startX; sx < endX; sx++) {
+                    let idx = (y * w + sx) * 4;
+                    let p = pixels[sx - startX];
+                    data[idx] = p.r; data[idx+1] = p.g; data[idx+2] = p.b; data[idx+3] = p.a;
+                }
+            }
+        }
+    }
+}
+
+// Resultat auf Canvas schreiben
+ctx.putImageData(imgData, 0, 0);`;
+
+        // Code initialisieren
+        codeEditor.value = DEFAULT_ALGORITHM_CODE;
+
+        // CUSTOM TOASTS (Nie Window Alerts nutzen!)
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.textContent = message;
+            
+            if (type === 'error') {
+                toast.className = "fixed bottom-6 left-6 bg-red-950/90 border border-red-800 text-red-200 px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-0 opacity-100 z-50";
+                toastIcon.innerHTML = `<svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else if (type === 'success') {
+                toast.className = "fixed bottom-6 left-6 bg-emerald-950/90 border border-emerald-800 text-emerald-200 px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-0 opacity-100 z-50";
+                toastIcon.innerHTML = `<svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else {
+                toast.className = "fixed bottom-6 left-6 bg-slate-900 border border-slate-700 text-slate-200 px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-0 opacity-100 z-50";
+                toastIcon.innerHTML = `<svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            }
+
+            // Nach 4 Sekunden ausblenden
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 4000);
+        }
+
+        // CONSOLE LOGGERS
+        function logToConsole(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            let colorClass = "text-slate-300";
+            if (type === 'error') colorClass = "text-red-400 font-bold";
+            if (type === 'success') colorClass = "text-emerald-400";
+            if (type === 'warning') colorClass = "text-amber-400";
+
+            const logItem = document.createElement('div');
+            logItem.className = `${colorClass} border-b border-slate-800/50 pb-1 mb-1`;
+            logItem.innerHTML = `<span class="text-slate-500 font-mono text-[10px] mr-2">[${time}]</span> ${message}`;
+            
+            consoleOutput.appendChild(logItem);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        clearConsoleBtn.addEventListener('click', () => {
+            consoleOutput.innerHTML = `<div class="text-slate-500">[System]: Konsole gelöscht.</div>`;
+        });
+
+        // GENERATIVE ART WORK PIECE (FOR STARTUP FALLBACK)
+        function generateProceduralArt() {
+            canvas.width = 400;
+            canvas.height = 400;
+            resolutionDisplay.textContent = `${canvas.width} x ${canvas.height} px`;
+
+            // Draw beautiful colorful background gradient
+            const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            grad.addColorStop(0, '#f43f5e'); // Rose
+            grad.addColorStop(0.3, '#8b5cf6'); // Violet
+            grad.addColorStop(0.6, '#3b82f6'); // Blue
+            grad.addColorStop(1, '#10b981'); // Emerald
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw geometric patterns
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+            ctx.lineWidth = 4;
+            for(let i = 0; i < 6; i++) {
+                ctx.beginPath();
+                ctx.arc(canvas.width/2, canvas.height/2, 40 + i*30, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Adding a bright texturing for pixel sorting contrast
+            ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+            ctx.font = "bold 44px 'Fira Code', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("LIVE CODE", canvas.width/2, canvas.height/2 - 15);
+            ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+            ctx.fillText("SORTING", canvas.width/2, canvas.height/2 + 35);
+
+            // Noise overlay to create threshold variance
+            const rawData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = rawData.data;
+            for(let i = 0; i < data.length; i += 4) {
+                const noise = (Math.random() - 0.5) * 45;
+                data[i] = Math.max(0, Math.min(255, data[i] + noise));
+                data[i+1] = Math.max(0, Math.min(255, data[i+1] + noise));
+                data[i+2] = Math.max(0, Math.min(255, data[i+2] + noise));
+            }
+            ctx.putImageData(rawData, 0, 0);
+
+            // Store current canvas as original
+            originalImage = new Image();
+            originalImage.src = canvas.toDataURL();
+            originalImage.onload = () => {
+                logToConsole("Generatives Testbild erzeugt. Perfekt für Pixel-Sorting!", "success");
+            }
+        }
+
+        // LOAD FILE
+        imageLoader.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                fileStatus.textContent = file.name;
+                
+                if (originalImage && originalImage.src && originalImage.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(originalImage.src);
+                }
+
+                originalImage = new Image();
+                originalImage.src = URL.createObjectURL(file);
+                
+                originalImage.onload = () => {
+                    // Begrenze Größe für performante Web-Echtzeit-Sortierung
+                    let targetW = originalImage.width;
+                    let targetH = originalImage.height;
+                    const maxDim = 800; // Ausreichend detailliert für Pixelsortierung bei stabiler Performance
+
+                    if (targetW > maxDim || targetH > maxDim) {
+                        if (targetW > targetH) {
+                            targetH = Math.round((targetH * maxDim) / targetW);
+                            targetW = maxDim;
+                        } else {
+                            targetW = Math.round((targetW * maxDim) / targetH);
+                            targetH = maxDim;
+                        }
+                        logToConsole(`Bildauflösung wurde zwecks Verarbeitungs-Performance auf ${targetW}x${targetH} skaliert.`, 'warning');
+                    }
+
+                    canvas.width = targetW;
+                    canvas.height = targetH;
+                    resolutionDisplay.textContent = `${targetW} x ${targetH} px`;
+                    
+                    ctx.drawImage(originalImage, 0, 0, targetW, targetH);
+                    logToConsole(`Bild "${file.name}" geladen (${originalImage.width}x${originalImage.height}px)`, 'success');
+                };
+            }
+        });
+
+        // RECOVERY OPERATORS
+        resetImageBtn.addEventListener('click', () => {
+            if (originalImage && originalImage.src) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+                logToConsole("Bild auf Originalzustand zurückgesetzt.", "info");
+                showToast("Originalbild wiederhergestellt", "info");
+            } else {
+                showToast("Kein Bild zum Zurücksetzen vorhanden", "error");
+            }
+        });
+
+        generateArtBtn.addEventListener('click', () => {
+            generateProceduralArt();
+            fileStatus.textContent = "Generatives Testbild aktiv";
+            showToast("Testbild generiert", "success");
+        });
+
+        restoreCodeBtn.addEventListener('click', () => {
+            codeEditor.value = DEFAULT_ALGORITHM_CODE;
+            logToConsole("Algorithmus-Code auf Werkseinstellungen zurückgesetzt.", "info");
+            showToast("Code zurückgesetzt", "info");
+        });
+
+        // UPDATER THRESHOLD VALUE TEXT
+        thresholdSlider.addEventListener('input', (e) => {
+            thresholdVal.textContent = e.target.value;
+        });
+
+        // EXECUTION ENGINE (THE COMPILER)
+        function executeSorterCode() {
+            if (!originalImage) {
+                logToConsole("Fehler: Kein Bild geladen. Kann nicht sortieren.", "error");
+                showToast("Bitte lade zuerst ein Bild!", "error");
+                return;
+            }
+
+            logToConsole("Starte Sortierlauf...", "info");
+            const startTime = performance.now();
+
+            // Setze das Canvas kurz auf das Originalbild zurück, um progressive Sortier-Überlagerungen steuerbar zu machen
+            ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+
+            // Vorbereitung der UI-Eingabewerte für den Code
+            const threshold = parseInt(thresholdSlider.value);
+            const mode = modeSelect.value;
+            const direction = directionSelect.value;
+            const userCode = codeEditor.value;
+
+            try {
+                // Dynamische Code-Konstruktion
+                // Wir packen den Code in einen sicheren Funktions-Wrapper, der Zugriff auf unsere Context-Variablen hat
+                const sortFunction = new Function('canvas', 'ctx', 'threshold', 'mode', 'direction', userCode);
+                
+                // Ausführung
+                sortFunction(canvas, ctx, threshold, mode, direction);
+
+                const duration = (performance.now() - startTime).toFixed(1);
+                logToConsole(`Sortierzyklus erfolgreich abgeschlossen in ${duration} ms.`, "success");
+                showToast(`Erfolgreich sortiert (${duration} ms)`, "success");
+
+            } catch (error) {
+                // Fange Fehler im benutzerdefinierten Code auf
+                console.error("User Code Error: ", error);
+                logToConsole(`COMPILER_ERROR: ${error.message}`, "error");
+                showToast("Code-Fehler! Siehe Konsole.", "error");
+            }
+        }
+
+        processBtn.addEventListener('click', executeSorterCode);
+
+        // INITIAL STARTUP SEQUENCE
+        window.onload = () => {
+            generateProceduralArt();
+        };
+    </script>
+</body>
+</html>
