@@ -153,6 +153,16 @@
                     </div>
 
                     <div class="flex flex-col gap-2">
+                        <label for="interval-mode-select" class="text-xs text-slate-400 uppercase tracking-wider">Pixelbereich (`intervalMode`)</label>
+                        <select id="interval-mode-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="window">Zwischen Schwellen</option>
+                            <option value="dark">Dunkel ≤ Threshold</option>
+                            <option value="bright">Hell ≥ Threshold</option>
+                            <option value="outside">Außenbereiche</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
                         <div class="flex justify-between items-center">
                             <label for="angle-slider" class="text-xs text-slate-400 uppercase tracking-wider">Winkel (`angle`)</label>
                             <span id="angle-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">0°</span>
@@ -267,6 +277,7 @@
         const modeSelect = document.getElementById('mode-select');
         const directionSelect = document.getElementById('direction-select');
         const sortTypeSelect = document.getElementById('sort-type-select');
+        const intervalModeSelect = document.getElementById('interval-mode-select');
         const angleSlider = document.getElementById('angle-slider');
         const angleVal = document.getElementById('angle-val');
         const falloffSlider = document.getElementById('falloff-slider');
@@ -315,7 +326,11 @@ const getSaturation = (r, g, b) => {
 
 const shouldSortPixel = (r, g, b, a) => {
     const v = getBrightness(r, g, b);
-    return a !== 0 && v >= threshold && v <= upperThreshold;
+    if (a === 0) return false;
+    if (intervalMode === 'dark') return v <= threshold;
+    if (intervalMode === 'bright') return v >= threshold;
+    if (intervalMode === 'outside') return v <= threshold || v >= upperThreshold;
+    return v >= threshold && v <= upperThreshold;
 };
 
 const shouldKeepInterval = () => Math.random() * 100 <= falloff;
@@ -688,6 +703,7 @@ ctx.putImageData(imgData, 0, 0);`;
             const mode = modeSelect.value;
             const direction = directionSelect.value;
             const sortType = sortTypeSelect.value;
+            const intervalMode = intervalModeSelect.value;
             const angle = parseInt(angleSlider.value);
             const falloff = parseInt(falloffSlider.value);
             const userCode = codeEditor.value;
@@ -696,10 +712,10 @@ ctx.putImageData(imgData, 0, 0);`;
             try {
                 // Dynamische Code-Konstruktion
                 // Wir packen den Code in einen sicheren Funktions-Wrapper, der Zugriff auf unsere Context-Variablen hat
-                const sortFunction = new Function('canvas', 'ctx', 'threshold', 'upperThreshold', 'mode', 'direction', 'sortType', 'falloff', userCode);
+                const sortFunction = new Function('canvas', 'ctx', 'threshold', 'upperThreshold', 'mode', 'direction', 'sortType', 'intervalMode', 'falloff', userCode);
                 
                 // Ausführung
-                sortFunction(canvas, ctx, threshold, upperThreshold, mode, direction, sortType, falloff);
+                sortFunction(canvas, ctx, threshold, upperThreshold, mode, direction, sortType, intervalMode, falloff);
                 unrotateCanvasAfterSort(angle, rotationState);
 
                 const duration = (performance.now() - startTime).toFixed(1);
