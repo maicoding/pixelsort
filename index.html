@@ -40,6 +40,24 @@
         .left-pane {
             min-height: 0;
         }
+        .preview-panel {
+            min-height: 260px;
+        }
+        .preview-stage {
+            min-height: 0;
+        }
+        .preview-canvas {
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        @media (min-height: 800px) {
+            .preview-panel {
+                min-height: 350px;
+            }
+        }
     </style>
 </head>
 <body class="app-shell bg-slate-950 text-slate-100 flex flex-col font-sans overflow-hidden">
@@ -132,7 +150,7 @@
             </div>
 
             <!-- CANVAS CONTAINER -->
-            <div class="flex-1 bg-slate-950 border border-slate-800 rounded-xl flex flex-col overflow-hidden shadow-2xl relative min-h-[350px]">
+            <div id="preview-panel" class="preview-panel flex-1 bg-slate-950 border border-slate-800 rounded-xl flex flex-col overflow-hidden shadow-2xl relative">
                 <div class="bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400">
                     <span class="font-mono flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
@@ -140,8 +158,8 @@
                     </span>
                     <span id="resolution-display" class="font-mono">0 x 0 px</span>
                 </div>
-                <div class="flex-1 flex items-center justify-center p-4 overflow-auto bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px]">
-                    <canvas id="imageCanvas" class="max-w-full max-h-[50vh] object-contain rounded-lg shadow-2xl border border-slate-800/50 bg-slate-900 image-render-pixelated"></canvas>
+                <div class="preview-stage flex-1 flex items-center justify-center p-4 overflow-auto bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px]">
+                    <canvas id="imageCanvas" class="preview-canvas rounded-lg shadow-2xl border border-slate-800/50 bg-slate-900 image-render-pixelated"></canvas>
                 </div>
             </div>
         </section>
@@ -216,6 +234,7 @@
         const consoleOutput = document.getElementById('console-output');
         const clearConsoleBtn = document.getElementById('clear-console');
         const resolutionDisplay = document.getElementById('resolution-display');
+        const previewPanel = document.getElementById('preview-panel');
 
         let originalImage = null;
 
@@ -473,6 +492,7 @@ ctx.putImageData(imgData, 0, 0);`;
                     resolutionDisplay.textContent = `${targetW} x ${targetH} px`;
                     
                     ctx.drawImage(originalImage, 0, 0, targetW, targetH);
+                    previewPanel.scrollIntoView({ block: 'nearest' });
                     logToConsole(`Bild "${file.name}" geladen (${originalImage.width}x${originalImage.height}px)`, 'success');
                 };
             }
