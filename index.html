@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel Sorter Studio & Live Code Editor</title>
+    <title>Pixel Sorter Studio</title>
     <link rel="stylesheet" href="./tailwind-generated.css">
     <style>
         /* Custom Scrollbar für den IDE-Look */
@@ -53,6 +53,14 @@
             max-height: 100%;
             object-fit: contain;
         }
+        .compare-canvas {
+            max-width: 24%;
+            max-height: 24%;
+        }
+        .auto-active {
+            border-color: #22d3ee;
+            color: #67e8f9;
+        }
         @media (min-height: 800px) {
             .preview-panel {
                 min-height: 350px;
@@ -73,7 +81,7 @@
         <div class="flex items-center gap-4 text-xs text-slate-400">
             <span>MODUS: <strong class="text-slate-200">INTERAKTIVE SANDBOX</strong></span>
             <span class="hidden sm:inline">|</span>
-            <span class="hidden sm:inline">ENGINE: <strong class="text-emerald-400">HTML5 CANVAS + LIVE JS</strong></span>
+            <span class="hidden sm:inline">ENGINE: <strong class="text-emerald-400">HTML5 CANVAS</strong></span>
         </div>
     </header>
 
@@ -109,19 +117,35 @@
 
                     <!-- Sort Mode -->
                     <div class="flex flex-col gap-2">
-                        <label for="mode-select" class="text-xs text-slate-400 uppercase tracking-wider">Sortier-Modus (`mode` im Code)</label>
+                        <label for="mode-select" class="text-xs text-slate-400 uppercase tracking-wider">Sortierwert</label>
                         <select id="mode-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                             <option value="brightness">Helligkeit (Brightness)</option>
                             <option value="hue">Farbton (Hue)</option>
                             <option value="saturation">Sättigung (Saturation)</option>
                             <option value="red">Rotkanal (Red Channel)</option>
+                            <option value="highest">Höchster RGB-Wert</option>
+                            <option value="lightness">Lightness</option>
+                            <option value="intensity">Intensity</option>
+                            <option value="minimum">Minimum RGB</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label for="algorithm-select" class="text-xs text-slate-400 uppercase tracking-wider">Sortierverfahren</label>
+                        <select id="algorithm-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="native">Native Stable</option>
+                            <option value="quick">Quick Sort</option>
+                            <option value="merge">Merge Sort</option>
+                            <option value="insertion">Insertion Sort</option>
+                            <option value="selection">Selection Sort</option>
+                            <option value="shell">Shell Sort</option>
                         </select>
                     </div>
 
                     <!-- Threshold Slider -->
                     <div class="flex flex-col gap-2">
                         <div class="flex justify-between items-center">
-                            <label for="threshold-slider" class="text-xs text-slate-400 uppercase tracking-wider">Helligkeits-Schwellenwert (`threshold`)</label>
+                            <label for="threshold-slider" class="text-xs text-slate-400 uppercase tracking-wider">Helligkeits-Schwellenwert</label>
                             <span id="threshold-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">120</span>
                         </div>
                         <input type="range" id="threshold-slider" min="0" max="255" value="120" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
@@ -129,7 +153,7 @@
 
                     <div class="flex flex-col gap-2">
                         <div class="flex justify-between items-center">
-                            <label for="upper-threshold-slider" class="text-xs text-slate-400 uppercase tracking-wider">Oberer Schwellenwert (`upperThreshold`)</label>
+                            <label for="upper-threshold-slider" class="text-xs text-slate-400 uppercase tracking-wider">Oberer Schwellenwert</label>
                             <span id="upper-threshold-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">204</span>
                         </div>
                         <input type="range" id="upper-threshold-slider" min="0" max="255" value="204" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
@@ -137,7 +161,7 @@
 
                     <!-- Direction Select -->
                     <div class="flex flex-col gap-2">
-                        <label for="direction-select" class="text-xs text-slate-400 uppercase tracking-wider">Sortier-Richtung (`direction`)</label>
+                        <label for="direction-select" class="text-xs text-slate-400 uppercase tracking-wider">Sortier-Richtung</label>
                         <select id="direction-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                             <option value="vertical">Vertikal ↓</option>
                             <option value="horizontal">Horizontal →</option>
@@ -145,15 +169,16 @@
                     </div>
 
                     <div class="flex flex-col gap-2">
-                        <label for="sort-type-select" class="text-xs text-slate-400 uppercase tracking-wider">Intervall-Typ (`sortType`)</label>
+                        <label for="sort-type-select" class="text-xs text-slate-400 uppercase tracking-wider">Intervall-Typ</label>
                         <select id="sort-type-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                             <option value="threshold">Threshold</option>
                             <option value="random">Random</option>
+                            <option value="none">Ganze Linien</option>
                         </select>
                     </div>
 
                     <div class="flex flex-col gap-2">
-                        <label for="interval-mode-select" class="text-xs text-slate-400 uppercase tracking-wider">Pixelbereich (`intervalMode`)</label>
+                        <label for="interval-mode-select" class="text-xs text-slate-400 uppercase tracking-wider">Pixelbereich</label>
                         <select id="interval-mode-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                             <option value="window">Zwischen Schwellen</option>
                             <option value="dark">Dunkel ≤ Threshold</option>
@@ -164,7 +189,7 @@
 
                     <div class="flex flex-col gap-2">
                         <div class="flex justify-between items-center">
-                            <label for="angle-slider" class="text-xs text-slate-400 uppercase tracking-wider">Winkel (`angle`)</label>
+                            <label for="angle-slider" class="text-xs text-slate-400 uppercase tracking-wider">Winkel</label>
                             <span id="angle-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">0°</span>
                         </div>
                         <input type="range" id="angle-slider" min="0" max="359" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
@@ -172,17 +197,58 @@
 
                     <div class="flex flex-col gap-2">
                         <div class="flex justify-between items-center">
-                            <label for="falloff-slider" class="text-xs text-slate-400 uppercase tracking-wider">Falloff (`falloff`)</label>
+                            <label for="falloff-slider" class="text-xs text-slate-400 uppercase tracking-wider">Falloff</label>
                             <span id="falloff-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">100%</span>
                         </div>
                         <input type="range" id="falloff-slider" min="0" max="100" value="100" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label for="render-mode-select" class="text-xs text-slate-400 uppercase tracking-wider">Render-Modus</label>
+                        <select id="render-mode-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="instant">Sofort</option>
+                            <option value="animated">Animiert</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <label for="multi-step-slider" class="text-xs text-slate-400 uppercase tracking-wider">Schritte pro Frame</label>
+                            <span id="multi-step-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">12</span>
+                        </div>
+                        <input type="range" id="multi-step-slider" min="1" max="80" value="12" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <label for="range-start-slider" class="text-xs text-slate-400 uppercase tracking-wider">Bereich Start</label>
+                            <span id="range-start-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">0%</span>
+                        </div>
+                        <input type="range" id="range-start-slider" min="0" max="99" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <label for="range-end-slider" class="text-xs text-slate-400 uppercase tracking-wider">Bereich Ende</label>
+                            <span id="range-end-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">100%</span>
+                        </div>
+                        <input type="range" id="range-end-slider" min="1" max="100" value="100" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label for="compare-select" class="text-xs text-slate-400 uppercase tracking-wider">Vergleich</label>
+                        <select id="compare-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="result">Nur Ergebnis</option>
+                            <option value="corner">Original klein</option>
+                            <option value="side">Original daneben</option>
+                        </select>
                     </div>
                 </div>
 
                 <div class="flex flex-col sm:flex-row gap-3 mt-2">
                     <button id="process-btn" class="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 active:scale-[0.98] text-slate-950 font-bold py-3 px-6 rounded-lg text-sm tracking-wider uppercase transition duration-150 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        Sortierlauf starten (Code ausführen)
+                        Sortierlauf starten
                     </button>
                     
                     <button id="generate-art-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 px-4 rounded-lg text-sm font-medium transition duration-200 border border-slate-700 flex items-center justify-center gap-2">
@@ -193,6 +259,10 @@
                     <button id="save-image-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 px-4 rounded-lg text-sm font-medium transition duration-200 border border-slate-700 flex items-center justify-center gap-2">
                         <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg>
                         Bild speichern
+                    </button>
+
+                    <button id="auto-loop-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 px-4 rounded-lg text-sm font-medium transition duration-200 border border-slate-700 flex items-center justify-center gap-2">
+                        Auto Loop
                     </button>
                 </div>
             </div>
@@ -210,38 +280,8 @@
                     <canvas id="imageCanvas" class="preview-canvas rounded-lg shadow-2xl border border-slate-800/50 bg-slate-900 image-render-pixelated"></canvas>
                 </div>
             </div>
-        </section>
 
-        <!-- RECHTE SPALTE: ECHTE LIVE-IDE / CODESCHREIBFENSTER -->
-        <section class="w-full lg:w-[500px] xl:w-[600px] bg-slate-900 border-t lg:border-t-0 lg:border-l border-slate-800 flex flex-col overflow-hidden shrink-0">
-            <!-- IDE HEADER -->
-            <div class="bg-slate-950/80 px-5 py-4 border-b border-slate-800 flex items-center justify-between">
-                <div>
-                    <h2 class="text-sm font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
-                        Algorithmen-Editor
-                    </h2>
-                    <p class="text-[10px] text-slate-500 mt-0.5">Du kannst diesen JavaScript-Code live bearbeiten und ausführen!</p>
-                </div>
-                <button id="restore-code-btn" title="Code auf Werkseinstellungen zurücksetzen" class="text-xs text-slate-400 hover:text-cyan-400 bg-slate-800 border border-slate-700 hover:border-slate-600 px-2.5 py-1.5 rounded-md transition duration-200 flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 10-3.86.517l3.18.636a2 2 0 001.38-.277l1.88-1.134z"></path></svg>
-                    Code Reset
-                </button>
-            </div>
-
-            <!-- THE CODE EDITOR AREA -->
-            <div class="flex-1 flex flex-col relative min-h-[300px]">
-                <!-- Line Numbers Decorator (Visual feedback inside Editor) -->
-                <div class="flex-1 flex">
-                    <div class="w-12 bg-slate-950/40 text-slate-600 text-right pr-2.5 py-4 font-mono text-xs select-none border-r border-slate-800/40 leading-6">
-                        1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12<br>13<br>14<br>15<br>16<br>17<br>18<br>19<br>20<br>21<br>22<br>23<br>24<br>25<br>26<br>27<br>28<br>29<br>30<br>31<br>32<br>33<br>34<br>35<br>36<br>37<br>38<br>39<br>40
-                    </div>
-                    <textarea id="code-editor" class="flex-1 bg-slate-900/40 text-cyan-300 p-4 font-mono text-xs leading-6 resize-none focus:outline-none focus:ring-0 code-input overflow-y-auto" spellcheck="false" autocomplete="off"></textarea>
-                </div>
-            </div>
-
-            <!-- CONSOLE / RUNTIME FEEDBACK -->
-            <div class="bg-slate-950 border-t border-slate-800 p-4 flex flex-col gap-2 min-h-[140px] shrink-0">
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-2 min-h-[140px] shrink-0">
                 <div class="flex items-center justify-between">
                     <span class="text-[10px] font-bold tracking-widest text-slate-500 uppercase flex items-center gap-1.5">
                         <span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
@@ -275,6 +315,7 @@
         const upperThresholdSlider = document.getElementById('upper-threshold-slider');
         const upperThresholdVal = document.getElementById('upper-threshold-val');
         const modeSelect = document.getElementById('mode-select');
+        const algorithmSelect = document.getElementById('algorithm-select');
         const directionSelect = document.getElementById('direction-select');
         const sortTypeSelect = document.getElementById('sort-type-select');
         const intervalModeSelect = document.getElementById('interval-mode-select');
@@ -282,12 +323,19 @@
         const angleVal = document.getElementById('angle-val');
         const falloffSlider = document.getElementById('falloff-slider');
         const falloffVal = document.getElementById('falloff-val');
+        const renderModeSelect = document.getElementById('render-mode-select');
+        const multiStepSlider = document.getElementById('multi-step-slider');
+        const multiStepVal = document.getElementById('multi-step-val');
+        const rangeStartSlider = document.getElementById('range-start-slider');
+        const rangeStartVal = document.getElementById('range-start-val');
+        const rangeEndSlider = document.getElementById('range-end-slider');
+        const rangeEndVal = document.getElementById('range-end-val');
+        const compareSelect = document.getElementById('compare-select');
         const processBtn = document.getElementById('process-btn');
         const generateArtBtn = document.getElementById('generate-art-btn');
         const saveImageBtn = document.getElementById('save-image-btn');
+        const autoLoopBtn = document.getElementById('auto-loop-btn');
         const resetImageBtn = document.getElementById('reset-image-btn');
-        const restoreCodeBtn = document.getElementById('restore-code-btn');
-        const codeEditor = document.getElementById('code-editor');
         const consoleOutput = document.getElementById('console-output');
         const clearConsoleBtn = document.getElementById('clear-console');
         const resolutionDisplay = document.getElementById('resolution-display');
@@ -296,159 +344,153 @@
         let originalImage = null;
         let baseCanvasWidth = 400;
         let baseCanvasHeight = 400;
+        let autoLoopTimer = null;
+        let isRunning = false;
 
-        // Vordefinierter, optimierter Standardcode für den Live-Editor
-        const DEFAULT_ALGORITHM_CODE = `// PIXEL SORTING ALGORITHMUS - LIVE CODE
-// Du kannst den Code verändern, um das Sortier-Verhalten anzupassen!
+        const algorithmMeta = {
+            native: "Stable",
+            quick: "Unstable",
+            merge: "Stable",
+            insertion: "Stable",
+            selection: "Unstable",
+            shell: "Unstable"
+        };
 
-const w = canvas.width;
-const h = canvas.height;
-const imgData = ctx.getImageData(0, 0, w, h);
-const data = imgData.data; // Flaches Array: [R, G, B, A, R, G, B, A...]
-
-// Hilfsfunktionen (zur Benutzung freigegeben)
-const getBrightness = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
-const getHue = (r, g, b) => {
-    let r_ = r/255, g_ = g/255, b_ = b/255;
-    let max = Math.max(r_, g_, b_), min = Math.min(r_, g_, b_);
-    if(max === min) return 0;
-    let h;
-    if(max === r_) h = (g_ - b_) / (max - min) + (g_ < b_ ? 6 : 0);
-    else if(max === g_) h = (b_ - r_) / (max - min) + 2;
-    else h = (r_ - g_) / (max - min) + 4;
-    return h / 6;
-};
-const getSaturation = (r, g, b) => {
-    let r_ = r/255, g_ = g/255, b_ = b/255;
-    let max = Math.max(r_, g_, b_), min = Math.min(r_, g_, b_);
-    return max === 0 ? 0 : (max - min) / max;
-};
-
-const shouldSortPixel = (r, g, b, a) => {
-    const v = getBrightness(r, g, b);
-    if (a === 0) return false;
-    if (intervalMode === 'dark') return v <= threshold;
-    if (intervalMode === 'bright') return v >= threshold;
-    if (intervalMode === 'outside') return v <= threshold || v >= upperThreshold;
-    return v >= threshold && v <= upperThreshold;
-};
-
-const shouldKeepInterval = () => Math.random() * 100 <= falloff;
-const randomEnd = (position, limit) => Math.min(limit, position + Math.floor(limit * 0.01 + Math.random() * 100));
-
-// Berechnet den Sortierwert basierend auf UI-Auswahl
-const getSortValue = (r, g, b) => {
-    if (mode === 'brightness') return getBrightness(r, g, b);
-    if (mode === 'hue') return getHue(r, g, b);
-    if (mode === 'saturation') return getSaturation(r, g, b);
-    if (mode === 'red') return r;
-    return 0;
-};
-
-// --- SORTIERUNG STARTEN ---
-if (direction === 'vertical') {
-    // Vertikales Sortieren (Spalte für Spalte)
-    for (let x = 0; x < w; x++) {
-        let y = 0;
-        while (y < h) {
-            // Finde Startpunkt über Threshold
-            while (y < h) {
-                let idx = (y * w + x) * 4;
-                if (shouldSortPixel(data[idx], data[idx+1], data[idx+2], data[idx+3])) break;
-                y++;
-            }
-            let startY = y;
-            let endY;
-            if (sortType === 'random') {
-                endY = randomEnd(startY, h - 1);
-                y = endY + 1;
-            } else {
-                // Finde Endpunkt außerhalb des Threshold-Fensters
-                while (y < h) {
-                    let idx = (y * w + x) * 4;
-                    if (!shouldSortPixel(data[idx], data[idx+1], data[idx+2], data[idx+3])) break;
-                    y++;
-                }
-                endY = y;
-            }
-
-            if (startY < endY && shouldKeepInterval()) {
-                // Segment erfassen und sortieren
-                let pixels = [];
-                for (let sy = startY; sy < endY; sy++) {
-                    let idx = (sy * w + x) * 4;
-                    pixels.push({
-                        r: data[idx], g: data[idx+1], b: data[idx+2], a: data[idx+3],
-                        val: getSortValue(data[idx], data[idx+1], data[idx+2])
-                    });
-                }
-                
-                // Sortiere das Segment
-                pixels.sort((a, b) => a.val - b.val);
-
-                // Pixel zurückschreiben
-                for (let sy = startY; sy < endY; sy++) {
-                    let idx = (sy * w + x) * 4;
-                    let p = pixels[sy - startY];
-                    data[idx] = p.r; data[idx+1] = p.g; data[idx+2] = p.b; data[idx+3] = p.a;
-                }
-            }
+        function brightness(r, g, b) {
+            return 0.299 * r + 0.587 * g + 0.114 * b;
         }
-    }
-} else {
-    // Horizontales Sortieren (Zeile für Zeile)
-    for (let y = 0; y < h; y++) {
-        let x = 0;
-        while (x < w) {
-            // Finde Startpunkt über Threshold
-            while (x < w) {
-                let idx = (y * w + x) * 4;
-                if (shouldSortPixel(data[idx], data[idx+1], data[idx+2], data[idx+3])) break;
-                x++;
-            }
-            let startX = x;
-            let endX;
-            if (sortType === 'random') {
-                endX = randomEnd(startX, w - 1);
-                x = endX + 1;
-            } else {
-                // Finde Endpunkt außerhalb des Threshold-Fensters
-                while (x < w) {
-                    let idx = (y * w + x) * 4;
-                    if (!shouldSortPixel(data[idx], data[idx+1], data[idx+2], data[idx+3])) break;
-                    x++;
-                }
-                endX = x;
-            }
 
-            if (startX < endX && shouldKeepInterval()) {
-                let pixels = [];
-                for (let sx = startX; sx < endX; sx++) {
-                    let idx = (y * w + sx) * 4;
-                    pixels.push({
-                        r: data[idx], g: data[idx+1], b: data[idx+2], a: data[idx+3],
-                        val: getSortValue(data[idx], data[idx+1], data[idx+2])
-                    });
-                }
-
-                // Sortiere das Segment
-                pixels.sort((a, b) => a.val - b.val);
-
-                for (let sx = startX; sx < endX; sx++) {
-                    let idx = (y * w + sx) * 4;
-                    let p = pixels[sx - startX];
-                    data[idx] = p.r; data[idx+1] = p.g; data[idx+2] = p.b; data[idx+3] = p.a;
-                }
-            }
+        function hue(r, g, b) {
+            const rr = r / 255;
+            const gg = g / 255;
+            const bb = b / 255;
+            const max = Math.max(rr, gg, bb);
+            const min = Math.min(rr, gg, bb);
+            if (max === min) return 0;
+            let h;
+            if (max === rr) h = (gg - bb) / (max - min) + (gg < bb ? 6 : 0);
+            else if (max === gg) h = (bb - rr) / (max - min) + 2;
+            else h = (rr - gg) / (max - min) + 4;
+            return h / 6;
         }
-    }
-}
 
-// Resultat auf Canvas schreiben
-ctx.putImageData(imgData, 0, 0);`;
+        function saturation(r, g, b) {
+            const rr = r / 255;
+            const gg = g / 255;
+            const bb = b / 255;
+            const max = Math.max(rr, gg, bb);
+            const min = Math.min(rr, gg, bb);
+            return max === 0 ? 0 : (max - min) / max;
+        }
 
-        // Code initialisieren
-        codeEditor.value = DEFAULT_ALGORITHM_CODE;
+        function sortValue(pixel, mode) {
+            if (mode === "brightness") return brightness(pixel.r, pixel.g, pixel.b);
+            if (mode === "hue") return hue(pixel.r, pixel.g, pixel.b);
+            if (mode === "saturation") return saturation(pixel.r, pixel.g, pixel.b);
+            if (mode === "red") return pixel.r;
+            if (mode === "highest") return Math.max(pixel.r, pixel.g, pixel.b);
+            if (mode === "lightness") return (Math.max(pixel.r, pixel.g, pixel.b) + Math.min(pixel.r, pixel.g, pixel.b)) / 2;
+            if (mode === "intensity") return pixel.r + pixel.g + pixel.b;
+            if (mode === "minimum") return Math.min(pixel.r, pixel.g, pixel.b);
+            return 0;
+        }
+
+        function shouldSortPixel(r, g, b, a, threshold, upperThreshold, intervalMode) {
+            const v = brightness(r, g, b);
+            if (a === 0) return false;
+            if (intervalMode === "dark") return v <= threshold;
+            if (intervalMode === "bright") return v >= threshold;
+            if (intervalMode === "outside") return v <= threshold || v >= upperThreshold;
+            return v >= threshold && v <= upperThreshold;
+        }
+
+        function comparePixels(a, b) {
+            if (a.val === b.val) return a.order - b.order;
+            return a.val - b.val;
+        }
+
+        function quickSort(items) {
+            if (items.length < 2) return items;
+            const pivot = items[Math.floor(items.length / 2)];
+            const left = [];
+            const equal = [];
+            const right = [];
+            for (const item of items) {
+                if (item.val < pivot.val) left.push(item);
+                else if (item.val > pivot.val) right.push(item);
+                else equal.push(item);
+            }
+            return quickSort(left).concat(equal, quickSort(right));
+        }
+
+        function mergeSort(items) {
+            if (items.length < 2) return items;
+            const mid = Math.floor(items.length / 2);
+            const left = mergeSort(items.slice(0, mid));
+            const right = mergeSort(items.slice(mid));
+            const merged = [];
+            let i = 0;
+            let j = 0;
+            while (i < left.length && j < right.length) {
+                merged.push(comparePixels(left[i], right[j]) <= 0 ? left[i++] : right[j++]);
+            }
+            return merged.concat(left.slice(i), right.slice(j));
+        }
+
+        function insertionSort(items) {
+            const arr = items.slice();
+            for (let i = 1; i < arr.length; i++) {
+                const current = arr[i];
+                let j = i - 1;
+                while (j >= 0 && comparePixels(arr[j], current) > 0) {
+                    arr[j + 1] = arr[j];
+                    j--;
+                }
+                arr[j + 1] = current;
+            }
+            return arr;
+        }
+
+        function selectionSort(items) {
+            const arr = items.slice();
+            for (let i = 0; i < arr.length - 1; i++) {
+                let min = i;
+                for (let j = i + 1; j < arr.length; j++) {
+                    if (arr[j].val < arr[min].val) min = j;
+                }
+                if (min !== i) [arr[i], arr[min]] = [arr[min], arr[i]];
+            }
+            return arr;
+        }
+
+        function shellSort(items) {
+            const arr = items.slice();
+            for (let gap = Math.floor(arr.length / 2); gap > 0; gap = Math.floor(gap / 2)) {
+                for (let i = gap; i < arr.length; i++) {
+                    const temp = arr[i];
+                    let j = i;
+                    while (j >= gap && arr[j - gap].val > temp.val) {
+                        arr[j] = arr[j - gap];
+                        j -= gap;
+                    }
+                    arr[j] = temp;
+                }
+            }
+            return arr;
+        }
+
+        function sortPixels(items, algorithm) {
+            if (algorithm === "quick") return quickSort(items);
+            if (algorithm === "merge") return mergeSort(items);
+            if (algorithm === "insertion") return insertionSort(items);
+            if (algorithm === "selection") return selectionSort(items);
+            if (algorithm === "shell") return shellSort(items);
+            return items.slice().sort(comparePixels);
+        }
+
+        function nextFrame() {
+            return new Promise(resolve => requestAnimationFrame(resolve));
+        }
 
         // CUSTOM TOASTS (Nie Window Alerts nutzen!)
         function showToast(message, type = 'info') {
@@ -651,13 +693,6 @@ ctx.putImageData(imgData, 0, 0);`;
             showToast("Testbild generiert", "success");
         });
 
-        restoreCodeBtn.addEventListener('click', () => {
-            codeEditor.value = DEFAULT_ALGORITHM_CODE;
-            logToConsole("Algorithmus-Code auf Werkseinstellungen zurückgesetzt.", "info");
-            showToast("Code zurückgesetzt", "info");
-        });
-
-        // UPDATER THRESHOLD VALUE TEXT
         thresholdSlider.addEventListener('input', (e) => {
             thresholdVal.textContent = e.target.value;
         });
@@ -674,6 +709,22 @@ ctx.putImageData(imgData, 0, 0);`;
             falloffVal.textContent = `${e.target.value}%`;
         });
 
+        multiStepSlider.addEventListener('input', (e) => {
+            multiStepVal.textContent = e.target.value;
+        });
+
+        rangeStartSlider.addEventListener('input', (e) => {
+            const start = Math.min(parseInt(e.target.value), parseInt(rangeEndSlider.value) - 1);
+            rangeStartSlider.value = start;
+            rangeStartVal.textContent = `${start}%`;
+        });
+
+        rangeEndSlider.addEventListener('input', (e) => {
+            const end = Math.max(parseInt(e.target.value), parseInt(rangeStartSlider.value) + 1);
+            rangeEndSlider.value = end;
+            rangeEndVal.textContent = `${end}%`;
+        });
+
         saveImageBtn.addEventListener('click', () => {
             const link = document.createElement('a');
             const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
@@ -684,54 +735,194 @@ ctx.putImageData(imgData, 0, 0);`;
             showToast("Bild gespeichert", "success");
         });
 
-        // EXECUTION ENGINE (THE COMPILER)
-        function executeSorterCode() {
+        function buildJobs(settings) {
+            const jobs = [];
+            const w = canvas.width;
+            const h = canvas.height;
+            const startRatio = settings.rangeStart / 100;
+            const endRatio = settings.rangeEnd / 100;
+
+            if (settings.direction === "vertical") {
+                const firstY = Math.floor(h * startRatio);
+                const lastY = Math.max(firstY + 1, Math.floor(h * endRatio));
+                for (let x = 0; x < w; x++) jobs.push({ fixed: x, start: firstY, end: lastY });
+            } else {
+                const firstX = Math.floor(w * startRatio);
+                const lastX = Math.max(firstX + 1, Math.floor(w * endRatio));
+                for (let y = 0; y < h; y++) jobs.push({ fixed: y, start: firstX, end: lastX });
+            }
+            return jobs;
+        }
+
+        function collectSegments(job, imgData, settings) {
+            const data = imgData.data;
+            const w = imgData.width;
+            const h = imgData.height;
+            const segments = [];
+            let pos = job.start;
+            while (pos < job.end) {
+                if (settings.sortType === "none") {
+                    segments.push([job.start, job.end]);
+                    break;
+                }
+                while (pos < job.end) {
+                    const idx = settings.direction === "vertical" ? (pos * w + job.fixed) * 4 : (job.fixed * w + pos) * 4;
+                    if (shouldSortPixel(data[idx], data[idx + 1], data[idx + 2], data[idx + 3], settings.threshold, settings.upperThreshold, settings.intervalMode)) break;
+                    pos++;
+                }
+                const start = pos;
+                let end = pos;
+                if (settings.sortType === "random") {
+                    end = Math.min(job.end, start + Math.floor(Math.max(w, h) * 0.01 + Math.random() * 100));
+                    pos = end;
+                } else {
+                    while (pos < job.end) {
+                        const idx = settings.direction === "vertical" ? (pos * w + job.fixed) * 4 : (job.fixed * w + pos) * 4;
+                        if (!shouldSortPixel(data[idx], data[idx + 1], data[idx + 2], data[idx + 3], settings.threshold, settings.upperThreshold, settings.intervalMode)) break;
+                        pos++;
+                    }
+                    end = pos;
+                }
+                if (start < end && Math.random() * 100 <= settings.falloff) segments.push([start, end]);
+            }
+            return segments;
+        }
+
+        function sortSegment(job, segment, imgData, settings) {
+            const data = imgData.data;
+            const w = imgData.width;
+            const pixels = [];
+            for (let p = segment[0]; p < segment[1]; p++) {
+                const idx = settings.direction === "vertical" ? (p * w + job.fixed) * 4 : (job.fixed * w + p) * 4;
+                const px = { r: data[idx], g: data[idx + 1], b: data[idx + 2], a: data[idx + 3], order: p };
+                px.val = sortValue(px, settings.mode);
+                pixels.push(px);
+            }
+            const sorted = sortPixels(pixels, settings.algorithm);
+            for (let p = segment[0]; p < segment[1]; p++) {
+                const idx = settings.direction === "vertical" ? (p * w + job.fixed) * 4 : (job.fixed * w + p) * 4;
+                const px = sorted[p - segment[0]];
+                data[idx] = px.r;
+                data[idx + 1] = px.g;
+                data[idx + 2] = px.b;
+                data[idx + 3] = px.a;
+            }
+        }
+
+        function applyCompareView(mode) {
+            if (mode === "result") return;
+            const result = document.createElement("canvas");
+            result.width = canvas.width;
+            result.height = canvas.height;
+            result.getContext("2d").drawImage(canvas, 0, 0);
+            if (mode === "corner") {
+                const width = Math.max(80, Math.floor(canvas.width * 0.22));
+                const height = Math.floor(width * baseCanvasHeight / baseCanvasWidth);
+                ctx.save();
+                ctx.globalAlpha = 0.95;
+                ctx.drawImage(originalImage, 0, 0, width, height);
+                ctx.strokeStyle = "rgba(255,255,255,0.75)";
+                ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
+                ctx.restore();
+                return;
+            }
+            const gap = 24;
+            canvas.width = baseCanvasWidth * 2 + gap;
+            canvas.height = baseCanvasHeight;
+            resolutionDisplay.textContent = `${canvas.width} x ${canvas.height} px`;
+            ctx.fillStyle = "#020617";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(originalImage, 0, 0, baseCanvasWidth, baseCanvasHeight);
+            ctx.drawImage(result, baseCanvasWidth + gap, 0);
+        }
+
+        async function executeSorterCode() {
+            if (isRunning) return;
             if (!originalImage) {
                 logToConsole("Fehler: Kein Bild geladen. Kann nicht sortieren.", "error");
                 showToast("Bitte lade zuerst ein Bild!", "error");
                 return;
             }
 
+            isRunning = true;
+            processBtn.disabled = true;
             logToConsole("Starte Sortierlauf...", "info");
             const startTime = performance.now();
 
             drawOriginalImage();
 
-            // Vorbereitung der UI-Eingabewerte für den Code
-            const threshold = parseInt(thresholdSlider.value);
-            const upperThreshold = parseInt(upperThresholdSlider.value);
-            const mode = modeSelect.value;
-            const direction = directionSelect.value;
-            const sortType = sortTypeSelect.value;
-            const intervalMode = intervalModeSelect.value;
-            const angle = parseInt(angleSlider.value);
-            const falloff = parseInt(falloffSlider.value);
-            const userCode = codeEditor.value;
-            const rotationState = rotateCanvasForSort(angle);
+            const settings = {
+                threshold: parseInt(thresholdSlider.value),
+                upperThreshold: parseInt(upperThresholdSlider.value),
+                mode: modeSelect.value,
+                algorithm: algorithmSelect.value,
+                direction: directionSelect.value,
+                sortType: sortTypeSelect.value,
+                intervalMode: intervalModeSelect.value,
+                angle: parseInt(angleSlider.value),
+                falloff: parseInt(falloffSlider.value),
+                multiStep: parseInt(multiStepSlider.value),
+                rangeStart: parseInt(rangeStartSlider.value),
+                rangeEnd: parseInt(rangeEndSlider.value),
+                renderMode: renderModeSelect.value,
+                compare: compareSelect.value
+            };
+            const rotationState = rotateCanvasForSort(settings.angle);
 
             try {
-                // Dynamische Code-Konstruktion
-                // Wir packen den Code in einen sicheren Funktions-Wrapper, der Zugriff auf unsere Context-Variablen hat
-                const sortFunction = new Function('canvas', 'ctx', 'threshold', 'upperThreshold', 'mode', 'direction', 'sortType', 'intervalMode', 'falloff', userCode);
-                
-                // Ausführung
-                sortFunction(canvas, ctx, threshold, upperThreshold, mode, direction, sortType, intervalMode, falloff);
-                unrotateCanvasAfterSort(angle, rotationState);
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const jobs = buildJobs(settings);
+                for (let i = 0; i < jobs.length; i++) {
+                    for (const segment of collectSegments(jobs[i], imgData, settings)) {
+                        sortSegment(jobs[i], segment, imgData, settings);
+                    }
+                    if (settings.renderMode === "animated" && i % settings.multiStep === 0) {
+                        ctx.putImageData(imgData, 0, 0);
+                        await nextFrame();
+                    }
+                }
+                ctx.putImageData(imgData, 0, 0);
+                unrotateCanvasAfterSort(settings.angle, rotationState);
+                applyCompareView(settings.compare);
 
                 const duration = (performance.now() - startTime).toFixed(1);
-                logToConsole(`Sortierzyklus erfolgreich abgeschlossen in ${duration} ms.`, "success");
+                logToConsole(`${algorithmMeta[settings.algorithm]} ${settings.algorithm} abgeschlossen in ${duration} ms.`, "success");
                 showToast(`Erfolgreich sortiert (${duration} ms)`, "success");
 
             } catch (error) {
-                // Fange Fehler im benutzerdefinierten Code auf
-                unrotateCanvasAfterSort(angle, rotationState);
-                console.error("User Code Error: ", error);
-                logToConsole(`COMPILER_ERROR: ${error.message}`, "error");
-                showToast("Code-Fehler! Siehe Konsole.", "error");
+                unrotateCanvasAfterSort(settings.angle, rotationState);
+                console.error("Sort Error: ", error);
+                logToConsole(`SORT_ERROR: ${error.message}`, "error");
+                showToast("Sortierfehler", "error");
+            } finally {
+                isRunning = false;
+                processBtn.disabled = false;
             }
         }
 
         processBtn.addEventListener('click', executeSorterCode);
+
+        autoLoopBtn.addEventListener('click', () => {
+            if (autoLoopTimer) {
+                clearInterval(autoLoopTimer);
+                autoLoopTimer = null;
+                autoLoopBtn.classList.remove('auto-active');
+                logToConsole("Auto Loop gestoppt.", "info");
+                return;
+            }
+            const directions = ["vertical", "horizontal"];
+            const modes = ["brightness", "hue", "saturation", "highest", "intensity"];
+            let index = 0;
+            autoLoopBtn.classList.add('auto-active');
+            autoLoopTimer = setInterval(() => {
+                directionSelect.value = directions[index % directions.length];
+                modeSelect.value = modes[index % modes.length];
+                index++;
+                executeSorterCode();
+            }, 2200);
+            logToConsole("Auto Loop gestartet.", "info");
+            executeSorterCode();
+        });
 
         // INITIAL STARTUP SEQUENCE
         window.onload = () => {
