@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Sorter Studio</title>
+    <link rel="stylesheet" href="./tailwind-generated.css">
+    <style>
+        /* Custom Scrollbar für den IDE-Look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .code-input {
+            tab-size: 4;
+            font-family: 'Fira Code', 'Courier New', Courier, monospace;
+        }
+        /* Pulsierender Effekt für Status */
+        @keyframes pulse-green {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulse-active {
+            animation: pulse-green 2s infinite;
+        }
+        .app-shell {
+            height: 100vh;
+        }
+        .app-main,
+        .left-pane {
+            min-height: 0;
+        }
+        .preview-panel {
+            min-height: 260px;
+        }
+        .preview-stage {
+            min-height: 0;
+        }
+        .preview-canvas {
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .compare-canvas {
+            max-width: 24%;
+            max-height: 24%;
+        }
+        .auto-active {
+            border-color: #22d3ee;
+            color: #67e8f9;
+        }
+        @media (min-height: 800px) {
+            .preview-panel {
+                min-height: 350px;
+            }
+        }
+    </style>
+</head>
+<body class="app-shell bg-slate-950 text-slate-100 flex flex-col font-sans overflow-hidden">
+
+    <!-- HEADER -->
+    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex flex-wrap items-center justify-between gap-4 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-3 h-3 rounded-full bg-emerald-500 pulse-active"></div>
+            <h1 class="text-xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
+                PIXEL_SORTER // LIVE_STUDIO
+            </h1>
+        </div>
+        <div class="flex items-center gap-4 text-xs text-slate-400">
+            <span>MODUS: <strong class="text-slate-200">INTERAKTIVE SANDBOX</strong></span>
+            <span class="hidden sm:inline">|</span>
+            <span class="hidden sm:inline">ENGINE: <strong class="text-emerald-400">HTML5 CANVAS</strong></span>
+        </div>
+    </header>
+
+    <!-- MAIN INTERFACE -->
+    <main class="app-main flex-1 flex flex-col lg:flex-row overflow-hidden">
+
+        <!-- LINKE SPALTE: BILD & STEUERUNG -->
+        <section class="left-pane flex-1 p-4 lg:p-6 flex flex-col gap-6 overflow-y-auto min-w-0">
+
+            <!-- CONTROLS CARD -->
+            <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5 flex flex-col gap-4 shadow-xl backdrop-blur-sm">
+                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    Parameter & Steuerung
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Image Upload -->
+                    <div class="flex flex-col gap-2">
+                        <label class="text-xs text-slate-400 uppercase tracking-wider">Bilddatenquelle</label>
+                        <div class="flex gap-2">
+                            <label class="flex-1 bg-slate-800 hover:bg-slate-700 active:bg-slate-700 border border-slate-700 hover:border-slate-500 rounded-lg p-2.5 text-center cursor-pointer text-sm font-medium transition duration-200 flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                Bild hochladen
+                                <input type="file" id="imageLoader" accept="image/*" class="hidden">
+                            </label>
+                            <button id="reset-image-btn" title="Originalbild wiederherstellen" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg p-2.5 transition duration-200 text-slate-300">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 15H19"></path></svg>
+                            </button>
+                        </div>
+                        <div id="file-status" class="text-xs text-slate-500 truncate">Standard-Testbild aktiv</div>
+                    </div>
+
+                    <!-- Sort Mode -->
+                    <div class="flex flex-col gap-2">
+                        <label for="mode-select" class="text-xs text-slate-400 uppercase tracking-wider">Sortierwert</label>
+                        <select id="mode-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="brightness">Helligkeit (Brightness)</option>
+                            <option value="hue">Farbton (Hue)</option>
+                            <option value="saturation">Sättigung (Saturation)</option>
+                            <option value="red">Rotkanal (Red Channel)</option>
+                            <option value="highest">Höchster RGB-Wert</option>
+                            <option value="lightness">Lightness</option>
+                            <option value="intensity">Intensity</option>
+                            <option value="minimum">Minimum RGB</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label for="algorithm-select" class="text-xs text-slate-400 uppercase tracking-wider">Sortierverfahren</label>
+                        <select id="algorithm-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="native">Native Stable</option>
+                            <option value="quick">Quick Sort</option>
+                            <option value="merge">Merge Sort</option>
+                            <option value="insertion">Insertion Sort</option>
+                            <option value="selection">Selection Sort</option>
+                            <option value="shell">Shell Sort</option>
+                        </select>
+                    </div>
+
+                    <!-- Threshold Slider -->
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <label for="threshold-slider" class="text-xs text-slate-400 uppercase tracking-wider">Helligkeits-Schwellenwert</label>
+                            <span id="threshold-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">120</span>
+                        </div>
+                        <input type="range" id="threshold-slider" min="0" max="255" value="120" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <label for="upper-threshold-slider" class="text-xs text-slate-400 uppercase tracking-wider">Oberer Schwellenwert</label>
+                            <span id="upper-threshold-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">204</span>
+                        </div>
+                        <input type="range" id="upper-threshold-slider" min="0" max="255" value="204" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
+                    </div>
+
+                    <!-- Direction Select -->
+                    <div class="flex flex-col gap-2">
+                        <label for="direction-select" class="text-xs text-slate-400 uppercase tracking-wider">Sortier-Richtung</label>
+                        <select id="direction-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="vertical">Vertikal ↓</option>
+                            <option value="horizontal">Horizontal →</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label for="sort-type-select" class="text-xs text-slate-400 uppercase tracking-wider">Intervall-Typ</label>
+                        <select id="sort-type-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="threshold">Threshold</option>
+                            <option value="random">Random</option>
+                            <option value="none">Ganze Linien</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label for="interval-mode-select" class="text-xs text-slate-400 uppercase tracking-wider">Pixelbereich</label>
+                        <select id="interval-mode-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="window">Zwischen Schwellen</option>
+                            <option value="dark">Dunkel ≤ Threshold</option>
+                            <option value="bright">Hell ≥ Threshold</option>
+                            <option value="outside">Außenbereiche</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <label for="angle-slider" class="text-xs text-slate-400 uppercase tracking-wider">Winkel</label>
+                            <span id="angle-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">0°</span>
+                        </div>
+                        <input type="range" id="angle-slider" min="0" max="359" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <label for="falloff-slider" class="text-xs text-slate-400 uppercase tracking-wider">Falloff</label>
+                            <span id="falloff-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">100%</span>
+                        </div>
+                        <input type="range" id="falloff-slider" min="0" max="100" value="100" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label for="render-mode-select" class="text-xs text-slate-400 uppercase tracking-wider">Render-Modus</label>
+                        <select id="render-mode-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="instant">Sofort</option>
+                            <option value="animated">Animiert</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <label for="multi-step-slider" class="text-xs text-slate-400 uppercase tracking-wider">Schritte pro Frame</label>
+                            <span id="multi-step-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">12</span>
+                        </div>
+                        <input type="range" id="multi-step-slider" min="1" max="80" value="12" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <label for="range-start-slider" class="text-xs text-slate-400 uppercase tracking-wider">Bereich Start</label>
+                            <span id="range-start-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">0%</span>
+                        </div>
+                        <input type="range" id="range-start-slider" min="0" max="99" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between items-center">
+                            <label for="range-end-slider" class="text-xs text-slate-400 uppercase tracking-wider">Bereich Ende</label>
+                            <span id="range-end-val" class="text-xs font-mono px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md border border-emerald-500/20">100%</span>
+                        </div>
+                        <input type="range" id="range-end-slider" min="1" max="100" value="100" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500 border border-slate-700">
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label for="compare-select" class="text-xs text-slate-400 uppercase tracking-wider">Vergleich</label>
+                        <select id="compare-select" class="bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <option value="result">Nur Ergebnis</option>
+                            <option value="corner">Original klein</option>
+                            <option value="side">Original daneben</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 mt-2">
+                    <button id="process-btn" class="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 active:scale-[0.98] text-slate-950 font-bold py-3 px-6 rounded-lg text-sm tracking-wider uppercase transition duration-150 shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Sortierlauf starten
+                    </button>
+
+                    <button id="generate-art-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 px-4 rounded-lg text-sm font-medium transition duration-200 border border-slate-700 flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Neues Testbild generieren
+                    </button>
+
+                    <button id="save-image-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 px-4 rounded-lg text-sm font-medium transition duration-200 border border-slate-700 flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"></path></svg>
+                        Bild speichern
+                    </button>
+
+                    <button id="auto-loop-btn" class="bg-slate-800 hover:bg-slate-700 text-slate-200 py-3 px-4 rounded-lg text-sm font-medium transition duration-200 border border-slate-700 flex items-center justify-center gap-2">
+                        Auto Loop
+                    </button>
+                </div>
+            </div>
+
+            <!-- CANVAS CONTAINER -->
+            <div id="preview-panel" class="preview-panel flex-1 bg-slate-950 border border-slate-800 rounded-xl flex flex-col overflow-hidden shadow-2xl relative">
+                <div class="bg-slate-900 px-4 py-2 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                    <span class="font-mono flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
+                        LIVE_PREVIEW_CANVAS
+                    </span>
+                    <span id="resolution-display" class="font-mono">0 x 0 px</span>
+                </div>
+                <div class="preview-stage flex-1 flex items-center justify-center p-4 overflow-auto bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px]">
+                    <canvas id="imageCanvas" class="preview-canvas rounded-lg shadow-2xl border border-slate-800/50 bg-slate-900 image-render-pixelated"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col gap-2 min-h-[140px] shrink-0">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold tracking-widest text-slate-500 uppercase flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                        Konsolen-Ausgabe & Performance
+                    </span>
+                    <button id="clear-console" class="text-[10px] text-slate-500 hover:text-slate-300 uppercase transition">Löschen</button>
+                </div>
+                <div id="console-output" class="flex-1 bg-slate-900 rounded-lg p-3 font-mono text-xs overflow-y-auto border border-slate-800/80 leading-5">
+                    <div class="text-slate-400">[System]: Engine bereit. Drücke "Sortierlauf starten" zum Rendern.</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- CUSTOM TOAST MESSAGES -->
+    <div id="toast" class="fixed bottom-6 left-6 bg-slate-900 border border-slate-700 text-slate-200 px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none z-50">
+        <span id="toast-icon"></span>
+        <span id="toast-message" class="text-sm font-medium">Message here</span>
+    </div>
+
+    <!-- MAIN SCRIPT -->
+    <script>
+        // DOM ELEMENTS
+        const imageLoader = document.getElementById('imageLoader');
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const fileStatus = document.getElementById('file-status');
+        const thresholdSlider = document.getElementById('threshold-slider');
+        const thresholdVal = document.getElementById('threshold-val');
+        const upperThresholdSlider = document.getElementById('upper-threshold-slider');
+        const upperThresholdVal = document.getElementById('upper-threshold-val');
+        const modeSelect = document.getElementById('mode-select');
+        const algorithmSelect = document.getElementById('algorithm-select');
+        const directionSelect = document.getElementById('direction-select');
+        const sortTypeSelect = document.getElementById('sort-type-select');
+        const intervalModeSelect = document.getElementById('interval-mode-select');
+        const angleSlider = document.getElementById('angle-slider');
+        const angleVal = document.getElementById('angle-val');
+        const falloffSlider = document.getElementById('falloff-slider');
+        const falloffVal = document.getElementById('falloff-val');
+        const renderModeSelect = document.getElementById('render-mode-select');
+        const multiStepSlider = document.getElementById('multi-step-slider');
+        const multiStepVal = document.getElementById('multi-step-val');
+        const rangeStartSlider = document.getElementById('range-start-slider');
+        const rangeStartVal = document.getElementById('range-start-val');
+        const rangeEndSlider = document.getElementById('range-end-slider');
+        const rangeEndVal = document.getElementById('range-end-val');
+        const compareSelect = document.getElementById('compare-select');
+        const processBtn = document.getElementById('process-btn');
+        const generateArtBtn = document.getElementById('generate-art-btn');
+        const saveImageBtn = document.getElementById('save-image-btn');
+        const autoLoopBtn = document.getElementById('auto-loop-btn');
+        const resetImageBtn = document.getElementById('reset-image-btn');
+        const consoleOutput = document.getElementById('console-output');
+        const clearConsoleBtn = document.getElementById('clear-console');
+        const resolutionDisplay = document.getElementById('resolution-display');
+        const previewPanel = document.getElementById('preview-panel');
+
+        let originalImage = null;
+        let baseCanvasWidth = 400;
+        let baseCanvasHeight = 400;
+        let autoLoopTimer = null;
+        let isRunning = false;
+
+        const algorithmMeta = {
+            native: "Stable",
+            quick: "Unstable",
+            merge: "Stable",
+            insertion: "Stable",
+            selection: "Unstable",
+            shell: "Unstable"
+        };
+
+        function brightness(r, g, b) {
+            return 0.299 * r + 0.587 * g + 0.114 * b;
+        }
+
+        function hue(r, g, b) {
+            const rr = r / 255;
+            const gg = g / 255;
+            const bb = b / 255;
+            const max = Math.max(rr, gg, bb);
+            const min = Math.min(rr, gg, bb);
+            if (max === min) return 0;
+            let h;
+            if (max === rr) h = (gg - bb) / (max - min) + (gg < bb ? 6 : 0);
+            else if (max === gg) h = (bb - rr) / (max - min) + 2;
+            else h = (rr - gg) / (max - min) + 4;
+            return h / 6;
+        }
+
+        function saturation(r, g, b) {
+            const rr = r / 255;
+            const gg = g / 255;
+            const bb = b / 255;
+            const max = Math.max(rr, gg, bb);
+            const min = Math.min(rr, gg, bb);
+            return max === 0 ? 0 : (max - min) / max;
+        }
+
+        function sortValue(pixel, mode) {
+            if (mode === "brightness") return brightness(pixel.r, pixel.g, pixel.b);
+            if (mode === "hue") return hue(pixel.r, pixel.g, pixel.b);
+            if (mode === "saturation") return saturation(pixel.r, pixel.g, pixel.b);
+            if (mode === "red") return pixel.r;
+            if (mode === "highest") return Math.max(pixel.r, pixel.g, pixel.b);
+            if (mode === "lightness") return (Math.max(pixel.r, pixel.g, pixel.b) + Math.min(pixel.r, pixel.g, pixel.b)) / 2;
+            if (mode === "intensity") return pixel.r + pixel.g + pixel.b;
+            if (mode === "minimum") return Math.min(pixel.r, pixel.g, pixel.b);
+            return 0;
+        }
+
+        function shouldSortPixel(r, g, b, a, threshold, upperThreshold, intervalMode) {
+            const v = brightness(r, g, b);
+            if (a === 0) return false;
+            if (intervalMode === "dark") return v <= threshold;
+            if (intervalMode === "bright") return v >= threshold;
+            if (intervalMode === "outside") return v <= threshold || v >= upperThreshold;
+            return v >= threshold && v <= upperThreshold;
+        }
+
+        function comparePixels(a, b) {
+            if (a.val === b.val) return a.order - b.order;
+            return a.val - b.val;
+        }
+
+        function quickSort(items) {
+            if (items.length < 2) return items;
+            const pivot = items[Math.floor(items.length / 2)];
+            const left = [];
+            const equal = [];
+            const right = [];
+            for (const item of items) {
+                if (item.val < pivot.val) left.push(item);
+                else if (item.val > pivot.val) right.push(item);
+                else equal.push(item);
+            }
+            return quickSort(left).concat(equal, quickSort(right));
+        }
+
+        function mergeSort(items) {
+            if (items.length < 2) return items;
+            const mid = Math.floor(items.length / 2);
+            const left = mergeSort(items.slice(0, mid));
+            const right = mergeSort(items.slice(mid));
+            const merged = [];
+            let i = 0;
+            let j = 0;
+            while (i < left.length && j < right.length) {
+                merged.push(comparePixels(left[i], right[j]) <= 0 ? left[i++] : right[j++]);
+            }
+            return merged.concat(left.slice(i), right.slice(j));
+        }
+
+        function insertionSort(items) {
+            const arr = items.slice();
+            for (let i = 1; i < arr.length; i++) {
+                const current = arr[i];
+                let j = i - 1;
+                while (j >= 0 && comparePixels(arr[j], current) > 0) {
+                    arr[j + 1] = arr[j];
+                    j--;
+                }
+                arr[j + 1] = current;
+            }
+            return arr;
+        }
+
+        function selectionSort(items) {
+            const arr = items.slice();
+            for (let i = 0; i < arr.length - 1; i++) {
+                let min = i;
+                for (let j = i + 1; j < arr.length; j++) {
+                    if (arr[j].val < arr[min].val) min = j;
+                }
+                if (min !== i) [arr[i], arr[min]] = [arr[min], arr[i]];
+            }
+            return arr;
+        }
+
+        function shellSort(items) {
+            const arr = items.slice();
+            for (let gap = Math.floor(arr.length / 2); gap > 0; gap = Math.floor(gap / 2)) {
+                for (let i = gap; i < arr.length; i++) {
+                    const temp = arr[i];
+                    let j = i;
+                    while (j >= gap && arr[j - gap].val > temp.val) {
+                        arr[j] = arr[j - gap];
+                        j -= gap;
+                    }
+                    arr[j] = temp;
+                }
+            }
+            return arr;
+        }
+
+        function sortPixels(items, algorithm) {
+            if (algorithm === "quick") return quickSort(items);
+            if (algorithm === "merge") return mergeSort(items);
+            if (algorithm === "insertion") return insertionSort(items);
+            if (algorithm === "selection") return selectionSort(items);
+            if (algorithm === "shell") return shellSort(items);
+            return items.slice().sort(comparePixels);
+        }
+
+        function nextFrame() {
+            return new Promise(resolve => requestAnimationFrame(resolve));
+        }
+
+        // CUSTOM TOASTS (Nie Window Alerts nutzen!)
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.textContent = message;
+
+            if (type === 'error') {
+                toast.className = "fixed bottom-6 left-6 bg-red-950/90 border border-red-800 text-red-200 px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-0 opacity-100 z-50";
+                toastIcon.innerHTML = `<svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else if (type === 'success') {
+                toast.className = "fixed bottom-6 left-6 bg-emerald-950/90 border border-emerald-800 text-emerald-200 px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-0 opacity-100 z-50";
+                toastIcon.innerHTML = `<svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else {
+                toast.className = "fixed bottom-6 left-6 bg-slate-900 border border-slate-700 text-slate-200 px-4 py-3 rounded-lg shadow-2xl flex items-center gap-3 transition-all duration-300 transform translate-y-0 opacity-100 z-50";
+                toastIcon.innerHTML = `<svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            }
+
+            // Nach 4 Sekunden ausblenden
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 4000);
+        }
+
+        // CONSOLE LOGGERS
+        function logToConsole(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            let colorClass = "text-slate-300";
+            if (type === 'error') colorClass = "text-red-400 font-bold";
+            if (type === 'success') colorClass = "text-emerald-400";
+            if (type === 'warning') colorClass = "text-amber-400";
+
+            const logItem = document.createElement('div');
+            logItem.className = `${colorClass} border-b border-slate-800/50 pb-1 mb-1`;
+            logItem.innerHTML = `<span class="text-slate-500 font-mono text-[10px] mr-2">[${time}]</span> ${message}`;
+
+            consoleOutput.appendChild(logItem);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        clearConsoleBtn.addEventListener('click', () => {
+            consoleOutput.innerHTML = `<div class="text-slate-500">[System]: Konsole gelöscht.</div>`;
+        });
+
+        function setCanvasSize(width, height) {
+            baseCanvasWidth = width;
+            baseCanvasHeight = height;
+            canvas.width = width;
+            canvas.height = height;
+            resolutionDisplay.textContent = `${width} x ${height} px`;
+        }
+
+        function drawOriginalImage() {
+            setCanvasSize(baseCanvasWidth, baseCanvasHeight);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(originalImage, 0, 0, baseCanvasWidth, baseCanvasHeight);
+        }
+
+        function rotateCanvasForSort(angle) {
+            if (!angle) return null;
+            const source = document.createElement('canvas');
+            source.width = canvas.width;
+            source.height = canvas.height;
+            source.getContext('2d').drawImage(canvas, 0, 0);
+
+            const diagonal = Math.ceil(Math.sqrt(source.width * source.width + source.height * source.height));
+            canvas.width = diagonal;
+            canvas.height = diagonal;
+            resolutionDisplay.textContent = `${baseCanvasWidth} x ${baseCanvasHeight} px / ${angle}°`;
+
+            ctx.save();
+            ctx.clearRect(0, 0, diagonal, diagonal);
+            ctx.translate(diagonal / 2, diagonal / 2);
+            ctx.rotate(angle * Math.PI / 180);
+            ctx.drawImage(source, -source.width / 2, -source.height / 2);
+            ctx.restore();
+            return { diagonal };
+        }
+
+        function unrotateCanvasAfterSort(angle, rotationState) {
+            if (!angle || !rotationState) return;
+            const sorted = document.createElement('canvas');
+            sorted.width = canvas.width;
+            sorted.height = canvas.height;
+            sorted.getContext('2d').drawImage(canvas, 0, 0);
+
+            setCanvasSize(baseCanvasWidth, baseCanvasHeight);
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(-angle * Math.PI / 180);
+            ctx.drawImage(sorted, -sorted.width / 2, -sorted.height / 2);
+            ctx.restore();
+        }
+
+        // GENERATIVE ART WORK PIECE (FOR STARTUP FALLBACK)
+        function generateProceduralArt() {
+            setCanvasSize(400, 400);
+
+            // Draw beautiful colorful background gradient
+            const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            grad.addColorStop(0, '#f43f5e'); // Rose
+            grad.addColorStop(0.3, '#8b5cf6'); // Violet
+            grad.addColorStop(0.6, '#3b82f6'); // Blue
+            grad.addColorStop(1, '#10b981'); // Emerald
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw geometric patterns
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.25)";
+            ctx.lineWidth = 4;
+            for(let i = 0; i < 6; i++) {
+                ctx.beginPath();
+                ctx.arc(canvas.width/2, canvas.height/2, 40 + i*30, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Adding a bright texturing for pixel sorting contrast
+            ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+            ctx.font = "bold 44px 'Fira Code', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("LIVE CODE", canvas.width/2, canvas.height/2 - 15);
+            ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+            ctx.fillText("SORTING", canvas.width/2, canvas.height/2 + 35);
+
+            // Noise overlay to create threshold variance
+            const rawData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = rawData.data;
+            for(let i = 0; i < data.length; i += 4) {
+                const noise = (Math.random() - 0.5) * 45;
+                data[i] = Math.max(0, Math.min(255, data[i] + noise));
+                data[i+1] = Math.max(0, Math.min(255, data[i+1] + noise));
+                data[i+2] = Math.max(0, Math.min(255, data[i+2] + noise));
+            }
+            ctx.putImageData(rawData, 0, 0);
+
+            // Store current canvas as original
+            originalImage = new Image();
+            originalImage.src = canvas.toDataURL();
+            originalImage.onload = () => {
+                logToConsole("Generatives Testbild erzeugt. Perfekt für Pixel-Sorting!", "success");
+            }
+        }
+
+        // LOAD FILE
+        imageLoader.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                fileStatus.textContent = file.name;
+
+                if (originalImage && originalImage.src && originalImage.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(originalImage.src);
+                }
+
+                originalImage = new Image();
+                originalImage.src = URL.createObjectURL(file);
+
+                originalImage.onload = () => {
+                    // Begrenze Größe für performante Web-Echtzeit-Sortierung
+                    let targetW = originalImage.width;
+                    let targetH = originalImage.height;
+                    const maxDim = 800; // Ausreichend detailliert für Pixelsortierung bei stabiler Performance
+
+                    if (targetW > maxDim || targetH > maxDim) {
+                        if (targetW > targetH) {
+                            targetH = Math.round((targetH * maxDim) / targetW);
+                            targetW = maxDim;
+                        } else {
+                            targetW = Math.round((targetW * maxDim) / targetH);
+                            targetH = maxDim;
+                        }
+                        logToConsole(`Bildauflösung wurde zwecks Verarbeitungs-Performance auf ${targetW}x${targetH} skaliert.`, 'warning');
+                    }
+
+                    setCanvasSize(targetW, targetH);
+
+                    ctx.drawImage(originalImage, 0, 0, targetW, targetH);
+                    previewPanel.scrollIntoView({ block: 'nearest' });
+                    logToConsole(`Bild "${file.name}" geladen (${originalImage.width}x${originalImage.height}px)`, 'success');
+                };
+            }
+        });
+
+        // RECOVERY OPERATORS
+        resetImageBtn.addEventListener('click', () => {
+            if (originalImage && originalImage.src) {
+                drawOriginalImage();
+                logToConsole("Bild auf Originalzustand zurückgesetzt.", "info");
+                showToast("Originalbild wiederhergestellt", "info");
+            } else {
+                showToast("Kein Bild zum Zurücksetzen vorhanden", "error");
+            }
+        });
+
+        generateArtBtn.addEventListener('click', () => {
+            generateProceduralArt();
+            fileStatus.textContent = "Generatives Testbild aktiv";
+            showToast("Testbild generiert", "success");
+        });
+
+        thresholdSlider.addEventListener('input', (e) => {
+            thresholdVal.textContent = e.target.value;
+        });
+
+        upperThresholdSlider.addEventListener('input', (e) => {
+            upperThresholdVal.textContent = e.target.value;
+        });
+
+        angleSlider.addEventListener('input', (e) => {
+            angleVal.textContent = `${e.target.value}°`;
+        });
+
+        falloffSlider.addEventListener('input', (e) => {
+            falloffVal.textContent = `${e.target.value}%`;
+        });
+
+        multiStepSlider.addEventListener('input', (e) => {
+            multiStepVal.textContent = e.target.value;
+        });
+
+        rangeStartSlider.addEventListener('input', (e) => {
+            const start = Math.min(parseInt(e.target.value), parseInt(rangeEndSlider.value) - 1);
+            rangeStartSlider.value = start;
+            rangeStartVal.textContent = `${start}%`;
+        });
+
+        rangeEndSlider.addEventListener('input', (e) => {
+            const end = Math.max(parseInt(e.target.value), parseInt(rangeStartSlider.value) + 1);
+            rangeEndSlider.value = end;
+            rangeEndVal.textContent = `${end}%`;
+        });
+
+        saveImageBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            const stamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+            link.download = `pixelsort-${stamp}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            logToConsole("Bild als PNG vorbereitet.", "success");
+            showToast("Bild gespeichert", "success");
+        });
+
+        function buildJobs(settings) {
+            const jobs = [];
+            const w = canvas.width;
+            const h = canvas.height;
+            const startRatio = settings.rangeStart / 100;
+            const endRatio = settings.rangeEnd / 100;
+
+            if (settings.direction === "vertical") {
+                const firstY = Math.floor(h * startRatio);
+                const lastY = Math.max(firstY + 1, Math.floor(h * endRatio));
+                for (let x = 0; x < w; x++) jobs.push({ fixed: x, start: firstY, end: lastY });
+            } else {
+                const firstX = Math.floor(w * startRatio);
+                const lastX = Math.max(firstX + 1, Math.floor(w * endRatio));
+                for (let y = 0; y < h; y++) jobs.push({ fixed: y, start: firstX, end: lastX });
+            }
+            return jobs;
+        }
+
+        function collectSegments(job, imgData, settings) {
+            const data = imgData.data;
+            const w = imgData.width;
+            const h = imgData.height;
+            const segments = [];
+            let pos = job.start;
+            while (pos < job.end) {
+                if (settings.sortType === "none") {
+                    segments.push([job.start, job.end]);
+                    break;
+                }
+                while (pos < job.end) {
+                    const idx = settings.direction === "vertical" ? (pos * w + job.fixed) * 4 : (job.fixed * w + pos) * 4;
+                    if (shouldSortPixel(data[idx], data[idx + 1], data[idx + 2], data[idx + 3], settings.threshold, settings.upperThreshold, settings.intervalMode)) break;
+                    pos++;
+                }
+                const start = pos;
+                let end = pos;
+                if (settings.sortType === "random") {
+                    end = Math.min(job.end, start + Math.floor(Math.max(w, h) * 0.01 + Math.random() * 100));
+                    pos = end;
+                } else {
+                    while (pos < job.end) {
+                        const idx = settings.direction === "vertical" ? (pos * w + job.fixed) * 4 : (job.fixed * w + pos) * 4;
+                        if (!shouldSortPixel(data[idx], data[idx + 1], data[idx + 2], data[idx + 3], settings.threshold, settings.upperThreshold, settings.intervalMode)) break;
+                        pos++;
+                    }
+                    end = pos;
+                }
+                if (start < end && Math.random() * 100 <= settings.falloff) segments.push([start, end]);
+            }
+            return segments;
+        }
+
+        function sortSegment(job, segment, imgData, settings) {
+            const data = imgData.data;
+            const w = imgData.width;
+            const pixels = [];
+            for (let p = segment[0]; p < segment[1]; p++) {
+                const idx = settings.direction === "vertical" ? (p * w + job.fixed) * 4 : (job.fixed * w + p) * 4;
+                const px = { r: data[idx], g: data[idx + 1], b: data[idx + 2], a: data[idx + 3], order: p };
+                px.val = sortValue(px, settings.mode);
+                pixels.push(px);
+            }
+            const sorted = sortPixels(pixels, settings.algorithm);
+            for (let p = segment[0]; p < segment[1]; p++) {
+                const idx = settings.direction === "vertical" ? (p * w + job.fixed) * 4 : (job.fixed * w + p) * 4;
+                const px = sorted[p - segment[0]];
+                data[idx] = px.r;
+                data[idx + 1] = px.g;
+                data[idx + 2] = px.b;
+                data[idx + 3] = px.a;
+            }
+        }
+
+        function applyCompareView(mode) {
+            if (mode === "result") return;
+            const result = document.createElement("canvas");
+            result.width = canvas.width;
+            result.height = canvas.height;
+            result.getContext("2d").drawImage(canvas, 0, 0);
+            if (mode === "corner") {
+                const width = Math.max(80, Math.floor(canvas.width * 0.22));
+                const height = Math.floor(width * baseCanvasHeight / baseCanvasWidth);
+                ctx.save();
+                ctx.globalAlpha = 0.95;
+                ctx.drawImage(originalImage, 0, 0, width, height);
+                ctx.strokeStyle = "rgba(255,255,255,0.75)";
+                ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
+                ctx.restore();
+                return;
+            }
+            const gap = 24;
+            canvas.width = baseCanvasWidth * 2 + gap;
+            canvas.height = baseCanvasHeight;
+            resolutionDisplay.textContent = `${canvas.width} x ${canvas.height} px`;
+            ctx.fillStyle = "#020617";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(originalImage, 0, 0, baseCanvasWidth, baseCanvasHeight);
+            ctx.drawImage(result, baseCanvasWidth + gap, 0);
+        }
+
+        async function executeSorterCode() {
+            if (isRunning) return;
+            if (!originalImage) {
+                logToConsole("Fehler: Kein Bild geladen. Kann nicht sortieren.", "error");
+                showToast("Bitte lade zuerst ein Bild!", "error");
+                return;
+            }
+
+            isRunning = true;
+            processBtn.disabled = true;
+            logToConsole("Starte Sortierlauf...", "info");
+            const startTime = performance.now();
+
+            drawOriginalImage();
+
+            const settings = {
+                threshold: parseInt(thresholdSlider.value),
+                upperThreshold: parseInt(upperThresholdSlider.value),
+                mode: modeSelect.value,
+                algorithm: algorithmSelect.value,
+                direction: directionSelect.value,
+                sortType: sortTypeSelect.value,
+                intervalMode: intervalModeSelect.value,
+                angle: parseInt(angleSlider.value),
+                falloff: parseInt(falloffSlider.value),
+                multiStep: parseInt(multiStepSlider.value),
+                rangeStart: parseInt(rangeStartSlider.value),
+                rangeEnd: parseInt(rangeEndSlider.value),
+                renderMode: renderModeSelect.value,
+                compare: compareSelect.value
+            };
+            const rotationState = rotateCanvasForSort(settings.angle);
+
+            try {
+                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const jobs = buildJobs(settings);
+                for (let i = 0; i < jobs.length; i++) {
+                    for (const segment of collectSegments(jobs[i], imgData, settings)) {
+                        sortSegment(jobs[i], segment, imgData, settings);
+                    }
+                    if (settings.renderMode === "animated" && i % settings.multiStep === 0) {
+                        ctx.putImageData(imgData, 0, 0);
+                        await nextFrame();
+                    }
+                }
+                ctx.putImageData(imgData, 0, 0);
+                unrotateCanvasAfterSort(settings.angle, rotationState);
+                applyCompareView(settings.compare);
+
+                const duration = (performance.now() - startTime).toFixed(1);
+                logToConsole(`${algorithmMeta[settings.algorithm]} ${settings.algorithm} abgeschlossen in ${duration} ms.`, "success");
+                showToast(`Erfolgreich sortiert (${duration} ms)`, "success");
+
+            } catch (error) {
+                unrotateCanvasAfterSort(settings.angle, rotationState);
+                console.error("Sort Error: ", error);
+                logToConsole(`SORT_ERROR: ${error.message}`, "error");
+                showToast("Sortierfehler", "error");
+            } finally {
+                isRunning = false;
+                processBtn.disabled = false;
+            }
+        }
+
+        processBtn.addEventListener('click', executeSorterCode);
+
+        autoLoopBtn.addEventListener('click', () => {
+            if (autoLoopTimer) {
+                clearInterval(autoLoopTimer);
+                autoLoopTimer = null;
+                autoLoopBtn.classList.remove('auto-active');
+                logToConsole("Auto Loop gestoppt.", "info");
+                return;
+            }
+            const directions = ["vertical", "horizontal"];
+            const modes = ["brightness", "hue", "saturation", "highest", "intensity"];
+            let index = 0;
+            autoLoopBtn.classList.add('auto-active');
+            autoLoopTimer = setInterval(() => {
+                directionSelect.value = directions[index % directions.length];
+                modeSelect.value = modes[index % modes.length];
+                index++;
+                executeSorterCode();
+            }, 2200);
+            logToConsole("Auto Loop gestartet.", "info");
+            executeSorterCode();
+        });
+
+        // INITIAL STARTUP SEQUENCE
+        window.onload = () => {
+            generateProceduralArt();
+        };
+    </script>
+</body>
+</html>
